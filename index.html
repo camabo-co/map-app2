@@ -1,1 +1,172 @@
-{"name":"index_complete_fixed.html","type":"code/html","content":"<!DOCTYPE html>\n<html lang="ja">\n<head>\n <meta charset="UTF-8">\n <title>座標マップアプリ（完全版・修正版）</title>\n <meta name="viewport" content="width=device-width, initial-scale=1">\n <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css\" />\n <script src="https://unpkg.com/leaflet/dist/leaflet.js\"></script>\n <style>\n body { font-family: sans-serif; font-size: 14px; margin: 10px; }\n #map { height: 600px; width: 100%; max-width: 800px; border: 1px solid #000; margin: 10px auto; }\n form, #filterArea, #listBtn { max-width: 800px; margin: 10px auto; }\n label, select, input { margin: 5px; font-size: 14px; }\n button { font-size: 14px; margin: 5px; }\n #listPopup {\n display: none;\n position: relative;\n background: #f9f9f9;\n padding: 10px;\n border: 1px solid #ccc;\n max-width: 800px;\n margin: 10px auto;\n max-height: 300px;\n overflow-y: auto;\n box-shadow: 0 2px 5px rgba(0,0,0,0.2);\n }\n </style>\n</head>\n<body>\n\n<h2>📍 座標マップアプリ（Googleスプレッドシート連携・完全版）</h2>\n\n<form id="coordForm">\n <label>サーバー名: <input type="text" id="server"></label>\n <label>X: <input type="number" id="x"></label>\n <label>Y: <input type="number" id="y"></label>\n <label>レベル:\n <select id="level">\n <option>1</option><option>2</option><option>3</option>\n <option>4</option><option>5</option><option>6</option><option>7</option>\n </select>\n </label>\n <label>状態:\n <select id="status">\n <option>未取得</option>\n <option>取得済み</option>\n </select>\n </label>\n <button type="submit">登録</button>\n</form>\n\n<div id="filterArea">\n <label>レベル:\n <select id="filterLevel">\n <option value="">すべて</option>\n <option>1</option><option>2</option><option>3</option>\n <option>4</option><option>5</option><option>6</option><option>7</option>\n </select>\n </label>\n <label>状態:\n <select id="filterStatus">\n <option value="">すべて</option>\n <option>未取得</option>\n <option>取得済み</option>\n </select>\n </label>\n <button onclick="loadData()">🔍 絞り込み表示</button>\n</div>\n\n<button id="listBtn" onclick="showList()">📋 一覧表示</button>\n\n<div id="listPopup">\n <button onclick="closeList()">✖ 閉じる</button>\n <div id="listContent"></div>\n</div>\n\n<div id="map"></div>\n\n<script>\nconst API_URL = "https://camabo-co.github.io/map-app2/";\nconst levelColors = {\n 1: "red", 2: "orange", 3: "yellow",\n 4: "green", 5: "blue", 6: "purple", 7: "black"\n};\nlet map = L.map('map', {\n crs: L.CRS.Simple,\n minZoom: -1,\n maxZoom: 2\n});\nlet bounds = [[0, 0], [1000, 1000]];\nL.rectangle(bounds, {color: "#ccc", weight: 1}).addTo(map);\nmap.fitBounds(bounds);\nlet markerLayer = L.layerGroup().addTo(map);\n\nfunction loadData() {\n markerLayer.clearLayers();\n fetch(API_URL)\n .then(res => res.json())\n .then(data => {\n const fLevel = document.getElementById('filterLevel').value;\n const fStatus = document.getElementById('filterStatus').value;\n window.latestData = data;\n data.forEach((item, idx) => {\n if ((fLevel && item["レベル"] != fLevel) || (fStatus && item["取得状況"] != fStatus)) return;\n const x = Number(item["X"]);\n const y = Number(item["Y"]);\n const level = Number(item["レベル"]);\n const status = item["取得状況"];\n const color = (status === "取得済み") ? "gray" : levelColors[level] || "black";\n\n const marker = L.circleMarker([1000 - y, x], {\n radius: 7,\n color: color,\n fillColor: color,\n fillOpacity: 0.9\n }).addTo(markerLayer).bindPopup(\n <b>${item[\"サーバー名\"]}</b><br>X:${x} Y:${y}<br>Lv:${level}<br>${status}<br> +\n <button onclick='markObtained(${idx})'>✅ 取得済みに</button>\n );\n });\n });\n}\n\nfunction markObtained(idx) {\n const item = window.latestData[idx];\n item["取得状況"] = "取得済み";\n fetch(API_URL, {\n method: 'POST',\n body: JSON.stringify(item)\n }).then(() => loadData());\n}\n\ndocument.getElementById('coordForm').addEventListener('submit', e => {\n e.preventDefault();\n const data = {\n "サーバー名": document.getElementById('server').value,\n "X": document.getElementById('x').value,\n "Y": document.getElementById('y').value,\n "レベル": document.getElementById('level').value,\n "取得状況": document.getElementById('status').value\n };\n fetch(API_URL, {\n method: 'POST',\n body: JSON.stringify(data)\n }).then(() => {\n alert("登録完了");\n loadData();\n });\n});\n\nfunction showList() {\n const popup = document.getElementById('listPopup');\n const content = document.getElementById('listContent');\n if (!window.latestData) return;\n let 未 = '', 済 = '';\n window.latestData.forEach(d => {\n const row = 🗺️ ${d[\"サーバー名\"]} / X:${d[\"X\"]}, Y:${d[\"Y\"]} / Lv:${d[\"レベル\"]}<br>;\n if (d["取得状況"] === "取得済み") 済 += row;\n else 未 += row;\n });\n content.innerHTML = <h4>🟢 未取得</h4>${未}<h4>⚪ 取得済み</h4>${済};\n popup.style.display = 'block';\n}\n\nfunction closeList() {\n document.getElementById('listPopup').style.display = 'none';\n}\n\nloadData();\n</script>\n\n</body>\n</html>"}
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>座標マップアプリ（完全版・修正版）</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <style>
+    body { font-family: sans-serif; font-size: 14px; margin: 10px; }
+    #map { height: 600px; width: 100%; max-width: 800px; border: 1px solid #000; margin: 10px auto; }
+    form, #filterArea, #listBtn { max-width: 800px; margin: 10px auto; }
+    label, select, input { margin: 5px; font-size: 14px; }
+    button { font-size: 14px; margin: 5px; }
+    #listPopup {
+      display: none;
+      position: relative;
+      background: #f9f9f9;
+      padding: 10px;
+      border: 1px solid #ccc;
+      max-width: 800px;
+      margin: 10px auto;
+      max-height: 300px;
+      overflow-y: auto;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+  </style>
+</head>
+<body>
+
+<h2>📍 座標マップアプリ（Googleスプレッドシート連携・完全版）</h2>
+
+<form id="coordForm">
+  <label>サーバー名: <input type="text" id="server"></label>
+  <label>X: <input type="number" id="x"></label>
+  <label>Y: <input type="number" id="y"></label>
+  <label>レベル:
+    <select id="level">
+      <option>1</option><option>2</option><option>3</option>
+      <option>4</option><option>5</option><option>6</option><option>7</option>
+    </select>
+  </label>
+  <label>状態:
+    <select id="status">
+      <option>未取得</option>
+      <option>取得済み</option>
+    </select>
+  </label>
+  <button type="submit">登録</button>
+</form>
+
+<div id="filterArea">
+  <label>レベル:
+    <select id="filterLevel">
+      <option value="">すべて</option>
+      <option>1</option><option>2</option><option>3</option>
+      <option>4</option><option>5</option><option>6</option><option>7</option>
+    </select>
+  </label>
+  <label>状態:
+    <select id="filterStatus">
+      <option value="">すべて</option>
+      <option>未取得</option>
+      <option>取得済み</option>
+    </select>
+  </label>
+  <button onclick="loadData()">🔍 絞り込み表示</button>
+</div>
+
+<button id="listBtn" onclick="showList()">📋 一覧表示</button>
+<div id="listPopup">
+  <button onclick="closeList()">&times; 閉じる</button>
+  <div id="listContent"></div>
+</div>
+
+<div id="map"></div>
+
+<script>
+const API_URL = "★ここにあなたのGAS URLを貼ってください★";
+const levelColors = {
+  1: "red", 2: "orange", 3: "yellow",
+  4: "green", 5: "blue", 6: "purple", 7: "black"
+};
+let map = L.map('map', {
+  crs: L.CRS.Simple,
+  minZoom: -1,
+  maxZoom: 2
+});
+let bounds = [[0, 0], [1000, 1000]];
+L.rectangle(bounds, {color: "#ccc", weight: 1}).addTo(map);
+map.fitBounds(bounds);
+let markerLayer = L.layerGroup().addTo(map);
+
+function loadData() {
+  markerLayer.clearLayers();
+  fetch(API_URL)
+    .then(res => res.json())
+    .then(data => {
+      const fLevel = document.getElementById('filterLevel').value;
+      const fStatus = document.getElementById('filterStatus').value;
+      window.latestData = data;
+      data.forEach((item, idx) => {
+        if ((fLevel && item["レベル"] != fLevel) || (fStatus && item["取得状況"] != fStatus)) return;
+        const x = Number(item["X"]);
+        const y = Number(item["Y"]);
+        const level = Number(item["レベル"]);
+        const status = item["取得状況"];
+        const color = (status === "取得済み") ? "gray" : levelColors[level] || "black";
+
+        const marker = L.circleMarker([1000 - y, x], {
+          radius: 7,
+          color: color,
+          fillColor: color,
+          fillOpacity: 0.9
+        }).addTo(markerLayer).bindPopup(
+          `<b>${item["サーバー名"]}</b><br>X:${x} Y:${y}<br>Lv:${level}<br>${status}<br>` +
+          `<button onclick='markObtained(${idx})'>✅ 取得済みに</button>`
+        );
+      });
+    });
+}
+
+function markObtained(idx) {
+  const item = window.latestData[idx];
+  item["取得状況"] = "取得済み";
+  fetch(API_URL, {
+    method: 'POST',
+    body: JSON.stringify(item)
+  }).then(() => loadData());
+}
+
+document.getElementById('coordForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const data = {
+    "サーバー名": document.getElementById('server').value,
+    "X": document.getElementById('x').value,
+    "Y": document.getElementById('y').value,
+    "レベル": document.getElementById('level').value,
+    "取得状況": document.getElementById('status').value
+  };
+  fetch(API_URL, {
+    method: 'POST',
+    body: JSON.stringify(data)
+  }).then(() => {
+    alert("登録完了");
+    loadData();
+  });
+});
+
+function showList() {
+  const popup = document.getElementById('listPopup');
+  const content = document.getElementById('listContent');
+  if (!window.latestData) return;
+  let 未 = '', 済 = '';
+  window.latestData.forEach(d => {
+    const row = `🗺️ ${d["サーバー名"]} / X:${d["X"]}, Y:${d["Y"]} / Lv:${d["レベル"]}<br>`;
+    if (d["取得状況"] === "取得済み") 済 += row;
+    else 未 += row;
+  });
+  content.innerHTML = `<h4>🟢 未取得</h4>${未}<h4>⚪ 取得済み</h4>${済}`;
+  popup.style.display = 'block';
+}
+
+function closeList() {
+  document.getElementById('listPopup').style.display = 'none';
+}
+
+loadData();
+</script>
+
+</body>
+</html>
