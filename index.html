@@ -64,19 +64,20 @@
       <option>取得済み</option>
     </select>
   </label>
-  <button onclick="loadData()">🔍 絞り込み表示</button>
+  <button type="button" onclick="loadData()">🔍 絞り込み表示</button>
 </div>
 
 <button id="listBtn" onclick="showList()">📋 一覧表示</button>
+
 <div id="listPopup">
-  <button onclick="closeList()">&times; 閉じる</button>
+  <button onclick="closeList()">✖ 閉じる</button>
   <div id="listContent"></div>
 </div>
 
 <div id="map"></div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycb.../exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzxOV4sW-dJqxKuj6upAzS0CClehvXJ823rJITjrjoJhCQk2boazgAuCxdfOxEIA0U/exec";
 const levelColors = {
   1: "red", 2: "orange", 3: "yellow",
   4: "green", 5: "blue", 6: "purple", 7: "black"
