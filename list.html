@@ -1,79 +1,71 @@
-<!-- list.html -->
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>座標一覧</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <title>📋 座標一覧（別画面）</title>
   <style>
-    body { font-family: sans-serif; font-size: 13px; padding: 10px; }
+    body { font-family: sans-serif; }
     table { border-collapse: collapse; width: 100%; }
-    th, td { border: 1px solid #ccc; padding: 4px; text-align: left; }
-    input[type="text"] { margin: 10px 0; width: 100%; padding: 5px; }
-    button { font-size: 12px; }
+    th, td { border: 1px solid #ccc; padding: 6px; text-align: center; }
+    input { width: 90%; padding: 4px; }
   </style>
 </head>
 <body>
-<h3>📋 未取得座標一覧（検索可能）</h3>
-<input type="text" id="search" placeholder="キーワードで絞り込み">
-<table>
-  <thead>
-    <tr>
-      <th>サーバー名</th><th>X</th><th>Y</th><th>レベル</th><th>状態</th><th>操作</th>
-    </tr>
-  </thead>
-  <tbody id="tableBody"></tbody>
-</table>
+  <h3>📋 座標一覧（別画面）</h3>
+  <input type="text" id="search" placeholder="検索：サーバー名・X・Y・レベル など" oninput="renderTable()" />
+  <table>
+    <thead>
+      <tr><th>サーバー名</th><th>X</th><th>Y</th><th>レベル</th><th>状態</th><th>操作</th></tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
 
-<script>
-const API_URL = "https://script.google.com/macros/s/AKfycbzcJIV9q4uZBX66O9UKNmVrCi3ajildNIrMfhMjJmJWsZdLQ0TT6JVxf5MorDn7rEA/exec";
-let allData = [];
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbw5JEsMFdIHWt3zbkeFFesRfgj1D9Xpd5_Fdg5YrYSmFgvlkCL-7G9lu0-9MONHh5s/exec";
+    let allData = [];
 
-function loadList() {
-  fetch(API_URL)
-    .then(res => res.json())
-    .then(data => {
-      allData = data;
-      renderTable();
-    });
-}
+    function fetchData() {
+      fetch(API_URL)
+        .then(res => res.json())
+        .then(data => {
+          allData = data;
+          renderTable();
+        });
+    }
 
-function renderTable() {
-  const keyword = document.getElementById('search').value.toLowerCase();
-  const tbody = document.getElementById('tableBody');
-  tbody.innerHTML = '';
-  allData.filter(d => d["取得状況"] !== "取得済み")
-         .filter(d => {
-           return Object.values(d).some(v => (v + '').toLowerCase().includes(keyword));
-         })
-         .forEach((item, i) => {
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <td>${item["サーバー名"]}</td>
-      <td>${item["X"]}</td>
-      <td>${item["Y"]}</td>
-      <td>${item["レベル"]}</td>
-      <td>${item["取得状況"]}</td>
-      <td><button onclick="markObtained(${i})">✅ 取得済みに</button></td>
-    `;
-    tbody.appendChild(row);
-  });
-}
+    function renderTable() {
+      const keyword = document.getElementById("search").value.trim();
+      const tbody = document.getElementById("tableBody");
+      tbody.innerHTML = "";
 
-function markObtained(index) {
-  const item = allData.filter(d => d["取得状況"] !== "取得済み")[index];
-  item["取得状況"] = "取得済み";
-  fetch(API_URL, {
-    method: 'POST',
-    body: JSON.stringify(item)
-  }).then(() => {
-    alert("取得済みに変更しました");
-    loadList();
-  });
-}
+      allData.forEach((item, idx) => {
+        if (item["取得状況"] === "取得済み") return;
+        const rowStr = `${item["サーバー名"]}${item["X"]}${item["Y"]}${item["レベル"]}`;
+        if (keyword && !rowStr.includes(keyword)) return;
 
-document.getElementById('search').addEventListener('input', renderTable);
-loadList();
-</script>
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${item["サーバー名"]}</td>
+          <td>${item["X"]}</td>
+          <td>${item["Y"]}</td>
+          <td>${item["レベル"]}</td>
+          <td>${item["取得状況"]}</td>
+          <td><button onclick="markObtained(${idx})">取得済みに</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function markObtained(index) {
+      const data = allData[index];
+      data["取得状況"] = "取得済み";
+      fetch(API_URL, {
+        method: "POST",
+        body: JSON.stringify(data)
+      }).then(() => fetchData());
+    }
+
+    fetchData();
+  </script>
 </body>
 </html>
