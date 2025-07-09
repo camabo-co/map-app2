@@ -1,106 +1,57 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>座標マップアプリ（map2）</title>
+  <title>座標一覧</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <style>
     body { font-family: sans-serif; font-size: 14px; margin: 10px; }
-    #map { height: 600px; width: 100%; max-width: 800px; border: 1px solid #000; margin: 10px auto; }
-    form, #filterArea, #listBtn { max-width: 800px; margin: 10px auto; }
-    label, select, input { margin: 5px; font-size: 14px; }
-    button { font-size: 14px; margin: 5px; }
+    table { border-collapse: collapse; width: 100%; max-width: 900px; margin: auto; }
+    th, td { border: 1px solid #ccc; padding: 6px; text-align: center; }
+    input[type="text"] { margin-bottom: 10px; padding: 5px; width: 90%; }
+    button { padding: 4px 10px; }
   </style>
 </head>
 <body>
 
-<h2>📍 座標マップアプリ（map2）</h2>
-
-<form id="coordForm">
-  <label>サーバー名: <input type="text" id="server" required></label>
-  <label>X: <input type="number" id="x" required></label>
-  <label>Y: <input type="number" id="y" required></label>
-  <label>レベル:
-    <select id="level">
-      <option>1</option><option>2</option><option>3</option>
-      <option>4</option><option>5</option><option>6</option><option>7</option>
-    </select>
-  </label>
-  <label>状態:
-    <select id="status">
-      <option>未取得</option>
-      <option>取得済み</option>
-    </select>
-  </label>
-  <button type="submit">登録</button>
-</form>
-
-<div id="filterArea">
-  <label>レベル:
-    <select id="filterLevel">
-      <option value="">すべて</option>
-      <option>1</option><option>2</option><option>3</option>
-      <option>4</option><option>5</option><option>6</option><option>7</option>
-    </select>
-  </label>
-  <label>状態:
-    <select id="filterStatus">
-      <option value="">すべて</option>
-      <option>未取得</option>
-      <option>取得済み</option>
-    </select>
-  </label>
-  <button type="button" onclick="loadData()">🔍 絞り込み表示</button>
-</div>
-
-<button onclick="window.open('list.html', '_blank')">📋 一覧（別画面）を開く</button>
-
-<div id="map"></div>
+<h2>📋 座標一覧（別画面）</h2>
+<input type="text" id="search" placeholder="検索：サーバー名・X・Y・レベル など" onkeyup="drawList()">
+<table>
+  <thead>
+    <tr><th>サーバー名</th><th>X</th><th>Y</th><th>レベル</th><th>状態</th><th>操作</th></tr>
+  </thead>
+  <tbody id="tableBody"></tbody>
+</table>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbzcJIV9q4uZBX66O9UKNmVrCi3ajildNIrMfhMjJmJWsZdLQ0TT6JVxf5MorDn7rEA/exec";
-const levelColors = { 1: "red", 2: "orange", 3: "yellow", 4: "green", 5: "blue", 6: "purple", 7: "black" };
-let map = L.map('map', { crs: L.CRS.Simple, minZoom: -1, maxZoom: 2 });
-let bounds = [[0, 0], [1000, 1000]];
-L.rectangle(bounds, {color: "#ccc", weight: 1}).addTo(map);
-map.fitBounds(bounds);
-let markerLayer = L.layerGroup().addTo(map);
+const API_URL = "https://script.google.com/macros/s/AKfycbzzHwJMGeJviEGYF50VKBbcS3UeKXhNdjL51WzMyBAXhfL3anz-FaG6_SPnX9x_TQ/exec";
 let latestData = [];
 
-function loadData() {
-  markerLayer.clearLayers();
-  fetch(API_URL)
-    .then(res => res.json())
-    .then(data => {
-      latestData = data;
-      const fLevel = document.getElementById('filterLevel').value;
-      const fStatus = document.getElementById('filterStatus').value;
-      data.forEach((item, idx) => {
-        if ((fLevel && item["レベル"] != fLevel) || (fStatus && item["取得状況"] != fStatus)) return;
-        if (item["取得状況"] === "取得済み") return; // 取得済みはマップに出さない
-        const x = Number(item["X"]);
-        const y = Number(item["Y"]);
-        const level = Number(item["レベル"]);
-        const color = levelColors[level] || "black";
-
-        L.circleMarker([1000 - y, x], {
-          radius: 7, color: color, fillColor: color, fillOpacity: 0.9
-        }).addTo(markerLayer).bindPopup(
-          `<b>${item["サーバー名"]}</b><br>X:${x} Y:${y}<br>Lv:${level}<br>${item["取得状況"]}<br>` +
-          `<button onclick='markObtained(${idx})'>✅ 取得済みに</button>`
-        );
-      });
-    });
+function drawList() {
+  const keyword = document.getElementById("search").value.toLowerCase();
+  const body = document.getElementById("tableBody");
+  body.innerHTML = "";
+  latestData.forEach((d, idx) => {
+    const rowText = `${d["サーバー名"]} ${d["X"]} ${d["Y"]} ${d["レベル"]} ${d["取得状況"]}`.toLowerCase();
+    if (!rowText.includes(keyword)) return;
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${d["サーバー名"]}</td>
+      <td>${d["X"]}</td>
+      <td>${d["Y"]}</td>
+      <td>${d["レベル"]}</td>
+      <td>${d["取得状況"]}</td>
+      <td>${d["取得状況"] === "未取得" ? `<button onclick="markObtained(${idx})">取得済みに</button>` : ""}</td>
+    `;
+    body.appendChild(row);
+  });
 }
 
 function markObtained(idx) {
   const item = latestData[idx];
   item["取得状況"] = "取得済み";
   fetch(API_URL, {
-    method: 'POST',
+    method: "POST",
     body: JSON.stringify(item)
   }).then(() => {
     alert("取得済みに変更しました");
@@ -108,31 +59,14 @@ function markObtained(idx) {
   });
 }
 
-document.getElementById('coordForm').addEventListener('submit', e => {
-  e.preventDefault();
-  const x = document.getElementById('x').value;
-  const y = document.getElementById('y').value;
-  const exists = latestData.some(item => item["X"] == x && item["Y"] == y);
-  if (exists) {
-    alert("この座標はすでに登録されています。");
-    return;
-  }
-
-  const data = {
-    "サーバー名": document.getElementById('server').value,
-    "X": x,
-    "Y": y,
-    "レベル": document.getElementById('level').value,
-    "取得状況": document.getElementById('status').value
-  };
-  fetch(API_URL, {
-    method: 'POST',
-    body: JSON.stringify(data)
-  }).then(() => {
-    alert("登録完了");
-    loadData();
-  });
-});
+function loadData() {
+  fetch(API_URL)
+    .then(res => res.json())
+    .then(data => {
+      latestData = data;
+      drawList();
+    });
+}
 
 loadData();
 </script>
