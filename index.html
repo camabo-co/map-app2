@@ -1,8 +1,9 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>座標マップアプリ（Googleスプレッドシート連携・完全版）</title>
+  <title>座標マップアプリ（map2）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -12,23 +13,11 @@
     form, #filterArea, #listBtn { max-width: 800px; margin: 10px auto; }
     label, select, input { margin: 5px; font-size: 14px; }
     button { font-size: 14px; margin: 5px; }
-    #listPopup {
-      display: none;
-      position: relative;
-      background: #f9f9f9;
-      padding: 10px;
-      border: 1px solid #ccc;
-      max-width: 800px;
-      margin: 10px auto;
-      max-height: 300px;
-      overflow-y: auto;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    }
   </style>
 </head>
 <body>
 
-<h2>📍 座標マップアプリ（Googleスプレッドシート連携・完全版）</h2>
+<h2>📍 座標マップアプリ（map2）</h2>
 
 <form id="coordForm">
   <label>サーバー名: <input type="text" id="server" required></label>
@@ -67,29 +56,14 @@
   <button type="button" onclick="loadData()">🔍 絞り込み表示</button>
 </div>
 
-<button id="listBtn" onclick="showList()">📋 一覧表示</button>
-
-<div id="listPopup">
-  <button onclick="closeList()">✖ 閉じる</button>
-  <div id="listContent"></div>
-</div>
+<button onclick="window.open('list.html', '_blank')">📋 一覧（別画面）を開く</button>
 
 <div id="map"></div>
 
 <script>
-// ✅ あなたのGAS URL（自動更新対応済み）
-const API_URL = "https://script.google.com/macros/s/AKfycbzm5Nl2dW6QAKCO7SciKgXNsyx_FgDUVjKqmUGISB6ez5c7NRHR32kurmri6A4Eh6c/exec";
-
-const levelColors = {
-  1: "red", 2: "orange", 3: "yellow",
-  4: "green", 5: "blue", 6: "purple", 7: "black"
-};
-
-let map = L.map('map', {
-  crs: L.CRS.Simple,
-  minZoom: -1,
-  maxZoom: 2
-});
+const API_URL = "https://script.google.com/macros/s/AKfycbzcJIV9q4uZBX66O9UKNmVrCi3ajildNIrMfhMjJmJWsZdLQ0TT6JVxf5MorDn7rEA/exec";
+const levelColors = { 1: "red", 2: "orange", 3: "yellow", 4: "green", 5: "blue", 6: "purple", 7: "black" };
+let map = L.map('map', { crs: L.CRS.Simple, minZoom: -1, maxZoom: 2 });
 let bounds = [[0, 0], [1000, 1000]];
 L.rectangle(bounds, {color: "#ccc", weight: 1}).addTo(map);
 map.fitBounds(bounds);
@@ -106,19 +80,16 @@ function loadData() {
       const fStatus = document.getElementById('filterStatus').value;
       data.forEach((item, idx) => {
         if ((fLevel && item["レベル"] != fLevel) || (fStatus && item["取得状況"] != fStatus)) return;
+        if (item["取得状況"] === "取得済み") return; // 取得済みはマップに出さない
         const x = Number(item["X"]);
         const y = Number(item["Y"]);
         const level = Number(item["レベル"]);
-        const status = item["取得状況"];
-        const color = (status === "取得済み") ? "gray" : levelColors[level] || "black";
+        const color = levelColors[level] || "black";
 
-        const marker = L.circleMarker([1000 - y, x], {
-          radius: 7,
-          color: color,
-          fillColor: color,
-          fillOpacity: 0.9
+        L.circleMarker([1000 - y, x], {
+          radius: 7, color: color, fillColor: color, fillOpacity: 0.9
         }).addTo(markerLayer).bindPopup(
-          `<b>${item["サーバー名"]}</b><br>X:${x} Y:${y}<br>Lv:${level}<br>${status}<br>` +
+          `<b>${item["サーバー名"]}</b><br>X:${x} Y:${y}<br>Lv:${level}<br>${item["取得状況"]}<br>` +
           `<button onclick='markObtained(${idx})'>✅ 取得済みに</button>`
         );
       });
@@ -134,7 +105,6 @@ function markObtained(idx) {
   }).then(() => {
     alert("取得済みに変更しました");
     loadData();
-    showList(); // 一覧も再描画
   });
 }
 
@@ -142,7 +112,11 @@ document.getElementById('coordForm').addEventListener('submit', e => {
   e.preventDefault();
   const x = document.getElementById('x').value;
   const y = document.getElementById('y').value;
-  const exists = latestData.find(item => item["X"] == x && item["Y"] == y);
+  const exists = latestData.some(item => item["X"] == x && item["Y"] == y);
+  if (exists) {
+    alert("この座標はすでに登録されています。");
+    return;
+  }
 
   const data = {
     "サーバー名": document.getElementById('server').value,
@@ -151,37 +125,16 @@ document.getElementById('coordForm').addEventListener('submit', e => {
     "レベル": document.getElementById('level').value,
     "取得状況": document.getElementById('status').value
   };
-
   fetch(API_URL, {
     method: 'POST',
     body: JSON.stringify(data)
   }).then(() => {
-    alert(exists ? "状態を更新しました" : "登録完了しました");
+    alert("登録完了");
     loadData();
-    showList();
   });
 });
 
-function showList() {
-  const popup = document.getElementById('listPopup');
-  const content = document.getElementById('listContent');
-  if (!latestData) return;
-  let 未 = '', 済 = '';
-  latestData.forEach(d => {
-    const row = `🗺️ ${d["サーバー名"]} / X:${d["X"]}, Y:${d["Y"]} / Lv:${d["レベル"]}<br>`;
-    if (d["取得状況"] === "取得済み") 済 += row;
-    else 未 += row;
-  });
-  content.innerHTML = `<h4>🟢 未取得</h4>${未 || "なし"}<h4>⚪ 取得済み</h4>${済 || "なし"}`;
-  popup.style.display = 'block';
-}
-
-function closeList() {
-  document.getElementById('listPopup').style.display = 'none';
-}
-
 loadData();
 </script>
-
 </body>
 </html>
