@@ -1,71 +1,106 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <title>📋 座標一覧（別画面）</title>
+  <meta charset="UTF-8">
+  <title>取得状況一覧（未取得・取得済み）</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body { font-family: sans-serif; }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border: 1px solid #ccc; padding: 6px; text-align: center; }
-    input { width: 90%; padding: 4px; }
+    body { font-family: sans-serif; font-size: 14px; margin: 10px; max-width: 800px; }
+    h2 { margin-top: 30px; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
+    .entry { margin-bottom: 5px; }
+    .level-title { font-weight: bold; margin-top: 15px; }
+    #searchBox { margin-bottom: 15px; }
+    input[type="text"] { padding: 5px; font-size: 14px; width: 200px; }
+    button { padding: 5px 10px; margin-left: 5px; }
   </style>
 </head>
 <body>
-  <h3>📋 座標一覧（別画面）</h3>
-  <input type="text" id="search" placeholder="検索：サーバー名・X・Y・レベル など" oninput="renderTable()" />
-  <table>
-    <thead>
-      <tr><th>サーバー名</th><th>X</th><th>Y</th><th>レベル</th><th>状態</th><th>操作</th></tr>
-    </thead>
-    <tbody id="tableBody"></tbody>
-  </table>
+<h1>📋 座標一覧（未取得・取得済み）</h1>
 
-  <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbw5JEsMFdIHWt3zbkeFFesRfgj1D9Xpd5_Fdg5YrYSmFgvlkCL-7G9lu0-9MONHh5s/exec";
-    let allData = [];
+<div id="searchBox">
+  <input type="text" id="search" placeholder="サーバー名 / X / Y で検索">
+  <button onclick="filterList()">🔍 検索</button>
+</div>
 
-    function fetchData() {
-      fetch(API_URL)
-        .then(res => res.json())
-        .then(data => {
-          allData = data;
-          renderTable();
-        });
-    }
+<div id="未取得">
+  <h2>🟢 未取得一覧</h2>
+  <div id="未取得Content"></div>
+</div>
 
-    function renderTable() {
-      const keyword = document.getElementById("search").value.trim();
-      const tbody = document.getElementById("tableBody");
-      tbody.innerHTML = "";
+<div id="取得済み">
+  <h2>⚪ 取得済み一覧</h2>
+  <div id="取得済みContent"></div>
+</div>
 
-      allData.forEach((item, idx) => {
-        if (item["取得状況"] === "取得済み") return;
-        const rowStr = `${item["サーバー名"]}${item["X"]}${item["Y"]}${item["レベル"]}`;
-        if (keyword && !rowStr.includes(keyword)) return;
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbxUaBtlgbT2ymqdv_e8oiWSaH4ZjE1GCzH7wotlkVtLjueyK-rWVtqwVnXBsM5WC0g/exec";
+let allData = [];
 
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${item["サーバー名"]}</td>
-          <td>${item["X"]}</td>
-          <td>${item["Y"]}</td>
-          <td>${item["レベル"]}</td>
-          <td>${item["取得状況"]}</td>
-          <td><button onclick="markObtained(${idx})">取得済みに</button></td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
+function loadList() {
+  fetch(API_URL)
+    .then(res => res.json())
+    .then(data => {
+      allData = data;
+      renderList();
+    });
+}
 
-    function markObtained(index) {
-      const data = allData[index];
-      data["取得状況"] = "取得済み";
-      fetch(API_URL, {
-        method: "POST",
-        body: JSON.stringify(data)
-      }).then(() => fetchData());
-    }
+function renderList(filtered = null) {
+  const 未取得 = document.getElementById("未取得Content");
+  const 取得済み = document.getElementById("取得済みContent");
+  未取得.innerHTML = "";
+  取得済み.innerHTML = "";
 
-    fetchData();
-  </script>
+  const data = filtered || allData;
+  const 未取得Levels = {};
+  const 取得済みLevels = {};
+
+  data.forEach(d => {
+    const group = d["取得状況"] === "取得済み" ? 取得済みLevels : 未取得Levels;
+    if (!group[d["レベル"]]) group[d["レベル"]] = [];
+    group[d["レベル"]].push(d);
+  });
+
+  for (const lv of Object.keys(未取得Levels).sort()) {
+    const header = document.createElement("div");
+    header.className = "level-title";
+    header.textContent = `レベル${lv}`;
+    未取得.appendChild(header);
+    未取得Levels[lv].forEach(d => {
+      const div = document.createElement("div");
+      div.className = "entry";
+      div.innerHTML = `🗺️ ${d["サーバー名"]} / X:${d["X"]}, Y:${d["Y"]} / Lv:${d["レベル"]}`;
+      未取得.appendChild(div);
+    });
+  }
+
+  for (const lv of Object.keys(取得済みLevels).sort()) {
+    const header = document.createElement("div");
+    header.className = "level-title";
+    header.textContent = `レベル${lv}`;
+    取得済み.appendChild(header);
+    取得済みLevels[lv].forEach(d => {
+      const div = document.createElement("div");
+      div.className = "entry";
+      div.innerHTML = `🗺️ ${d["サーバー名"]} / X:${d["X"]}, Y:${d["Y"]} / Lv:${d["レベル"]}`;
+      取得済み.appendChild(div);
+    });
+  }
+}
+
+function filterList() {
+  const query = document.getElementById("search").value.trim();
+  if (!query) {
+    renderList();
+    return;
+  }
+  const result = allData.filter(d => {
+    return d["サーバー名"].includes(query) || String(d["X"]).includes(query) || String(d["Y"]).includes(query);
+  });
+  renderList(result);
+}
+
+loadList();
+</script>
 </body>
 </html>

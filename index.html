@@ -1,120 +1,148 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <title>📍座標マップアプリ（map2）</title>
+  <meta charset="UTF-8">
+  <title>座標マップアプリ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <style>
-    body { font-family: sans-serif; font-size: 14px; }
-    label, input, select, button { margin: 2px; }
-    #map { height: 400px; margin-top: 10px; }
+    body { font-family: sans-serif; font-size: 14px; margin: 10px; }
+    #map { height: 600px; width: 100%; max-width: 800px; border: 1px solid #000; margin: 10px auto; }
+    form, #filterArea, #listLinks { max-width: 800px; margin: 10px auto; }
+    label, select, input { margin: 5px; font-size: 14px; }
+    button, a.button-link { font-size: 14px; margin: 5px; padding: 5px 10px; text-decoration: none; border: 1px solid #ccc; background: #eee; border-radius: 4px; display: inline-block; }
   </style>
 </head>
 <body>
-  <h2>📍座標マップアプリ（map2）</h2>
-  <div>
-    <label>サーバー名: <input id="server" /></label><br />
-    <label>X: <input id="x" /></label><br />
-    <label>Y: <input id="y" /></label><br />
-    <label>レベル: 
-      <select id="level">
-        <option>1</option><option>2</option><option>3</option>
-      </select>
-    </label><br />
-    <label>状態:
-      <select id="status">
-        <option>未取得</option>
-        <option>取得済み</option>
-      </select>
-    </label>
-    <button onclick="registerPoint()">登録</button>
-  </div>
 
-  <div>
-    <label>レベル: 
-      <select id="filterLevel"><option value="">すべて</option><option>1</option><option>2</option><option>3</option></select>
-    </label>
-    <label>状態: 
-      <select id="filterStatus"><option value="">すべて</option><option>未取得</option><option>取得済み</option></select>
-    </label>
-    <button onclick="loadData()">🔍 絞り込み表示</button>
-  </div>
+<h2>📍 座標マップアプリ</h2>
 
-  <p><button onclick="window.open('list.html', '_blank')">📋 一覧（別画面）を開く</button></p>
+<form id="coordForm">
+  <label>サーバー名: <input type="text" id="server" required></label>
+  <label>X: <input type="number" id="x" required></label>
+  <label>Y: <input type="number" id="y" required></label>
+  <label>レベル:
+    <select id="level">
+      <option>1</option><option>2</option><option>3</option>
+      <option>4</option><option>5</option><option>6</option><option>7</option>
+    </select>
+  </label>
+  <label>状態:
+    <select id="status">
+      <option>未取得</option>
+      <option>取得済み</option>
+    </select>
+  </label>
+  <button type="submit">登録</button>
+</form>
 
-  <div id="map"></div>
+<div id="filterArea">
+  <label>レベル:
+    <select id="filterLevel">
+      <option value="">すべて</option>
+      <option>1</option><option>2</option><option>3</option>
+      <option>4</option><option>5</option><option>6</option><option>7</option>
+    </select>
+  </label>
+  <label>状態:
+    <select id="filterStatus">
+      <option value="">すべて</option>
+      <option>未取得</option>
+      <option>取得済み</option>
+    </select>
+  </label>
+  <button type="button" onclick="loadData()">🔍 絞り込み表示</button>
+</div>
 
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbw5JEsMFdIHWt3zbkeFFesRfgj1D9Xpd5_Fdg5YrYSmFgvlkCL-7G9lu0-9MONHh5s/exec";
-    const map = L.map('map').setView([500, 500], 2);
-    const markerLayer = L.layerGroup().addTo(map);
-    const levelColors = { 1: 'green', 2: 'orange', 3: 'red' };
-    let latestData = [];
+<div id="listLinks">
+  <a href="list.html?status=%E6%9C%AA%E5%8F%96%E5%BE%97" class="button-link" target="_blank">🟢 未取得一覧</a>
+  <a href="list.html?status=%E5%8F%96%E5%BE%97%E6%B8%88%E3%81%BF" class="button-link" target="_blank">⚪ 取得済み一覧</a>
+</div>
 
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 18
-    }).addTo(map);
+<div id="map"></div>
 
-    function loadData() {
-      markerLayer.clearLayers();
-      fetch(API_URL)
-        .then(res => res.json())
-        .then(data => {
-          latestData = data;
-          const fLevel = document.getElementById('filterLevel').value;
-          const fStatus = document.getElementById('filterStatus').value;
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbxUaBtlgbT2ymqdv_e8oiWSaH4ZjE1GCzH7wotlkVtLjueyK-rWVtqwVnXBsM5WC0g/exec";
+const levelColors = { 1: "red", 2: "orange", 3: "yellow", 4: "green", 5: "blue", 6: "purple", 7: "black" };
+let map = L.map('map', { crs: L.CRS.Simple, minZoom: -1, maxZoom: 2 });
+let bounds = [[0, 0], [1000, 1000]];
+L.rectangle(bounds, {color: "#ccc", weight: 1}).addTo(map);
+map.fitBounds(bounds);
+let markerLayer = L.layerGroup().addTo(map);
+let latestData = [];
 
-          data.forEach((item, idx) => {
-            if (item["取得状況"] === "取得済み") return;
-            if ((fLevel && item["レベル"] != fLevel) || (fStatus && item["取得状況"] != fStatus)) return;
+function loadData() {
+  markerLayer.clearLayers();
+  fetch(API_URL)
+    .then(res => res.json())
+    .then(data => {
+      latestData = data;
+      const fLevel = document.getElementById('filterLevel').value;
+      const fStatus = document.getElementById('filterStatus').value;
+      data.forEach((item, idx) => {
+        if (item["取得状況"] === "取得済み") return;
+        if ((fLevel && item["レベル"] != fLevel) || (fStatus && item["取得状況"] != fStatus)) return;
 
-            const x = Number(item["X"]);
-            const y = Number(item["Y"]);
-            const level = Number(item["レベル"]);
-            const color = levelColors[level] || "black";
+        const x = Number(item["X"]);
+        const y = Number(item["Y"]);
+        const level = Number(item["レベル"]);
+        const status = item["取得状況"];
+        const color = levelColors[level] || "black";
 
-            const marker = L.circleMarker([1000 - y, x], {
-              radius: 6,
-              color: color,
-              fillColor: color,
-              fillOpacity: 0.9
-            }).addTo(markerLayer).bindPopup(
-              `<b>${item["サーバー名"]}</b><br>X:${x} Y:${y}<br>Lv:${level}<br>${item["取得状況"]}<br>` +
-              `<button onclick='markObtained(${idx})'>✅ 取得済みに</button>`
-            );
-          });
-        });
-    }
-
-    function registerPoint() {
-      const data = {
-        サーバー名: document.getElementById('server').value,
-        X: document.getElementById('x').value,
-        Y: document.getElementById('y').value,
-        レベル: document.getElementById('level').value,
-        取得状況: document.getElementById('status').value
-      };
-
-      fetch(API_URL, {
-        method: "POST",
-        body: JSON.stringify(data)
-      }).then(res => res.text()).then(() => {
-        alert("登録しました！");
-        loadData();
+        const marker = L.circleMarker([1000 - y, x], {
+          radius: 6,
+          color: color,
+          fillColor: color,
+          fillOpacity: 0.9
+        }).addTo(markerLayer).bindPopup(
+          `<b>${item["サーバー名"]}</b><br>X:${x} Y:${y}<br>Lv:${level}<br>${status}<br>` +
+          `<button onclick='markObtained(${idx})'>✅ 取得済みに</button>`
+        );
       });
-    }
+    });
+}
 
-    function markObtained(idx) {
-      const data = latestData[idx];
-      data["取得状況"] = "取得済み";
-      fetch(API_URL, {
-        method: "POST",
-        body: JSON.stringify(data)
-      }).then(() => loadData());
-    }
-
+function markObtained(idx) {
+  const item = latestData[idx];
+  item["取得状況"] = "取得済み";
+  fetch(API_URL, {
+    method: 'POST',
+    body: JSON.stringify(item)
+  }).then(() => {
+    alert("取得済みに変更しました");
     loadData();
-  </script>
+  });
+}
+
+document.getElementById('coordForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const x = document.getElementById('x').value;
+  const y = document.getElementById('y').value;
+  const exists = latestData.some(item => item["X"] == x && item["Y"] == y);
+  if (exists) {
+    alert("この座標はすでに登録されています。登録済み状態に切り替えます。");
+    markObtained(latestData.findIndex(item => item["X"] == x && item["Y"] == y));
+    return;
+  }
+
+  const data = {
+    "サーバー名": document.getElementById('server').value,
+    "X": x,
+    "Y": y,
+    "レベル": document.getElementById('level').value,
+    "取得状況": document.getElementById('status').value
+  };
+  fetch(API_URL, {
+    method: 'POST',
+    body: JSON.stringify(data)
+  }).then(() => {
+    alert("登録完了");
+    loadData();
+  });
+});
+
+loadData();
+</script>
 </body>
 </html>
