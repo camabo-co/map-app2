@@ -77,11 +77,14 @@
 <div id="map"></div>
 
 <script>
+// ✅ あなたのGAS URL（自動更新対応済み）
 const API_URL = "https://script.google.com/macros/s/AKfycbzm5Nl2dW6QAKCO7SciKgXNsyx_FgDUVjKqmUGISB6ez5c7NRHR32kurmri6A4Eh6c/exec";
+
 const levelColors = {
   1: "red", 2: "orange", 3: "yellow",
   4: "green", 5: "blue", 6: "purple", 7: "black"
 };
+
 let map = L.map('map', {
   crs: L.CRS.Simple,
   minZoom: -1,
@@ -139,11 +142,7 @@ document.getElementById('coordForm').addEventListener('submit', e => {
   e.preventDefault();
   const x = document.getElementById('x').value;
   const y = document.getElementById('y').value;
-  const exists = latestData.some(item => item["X"] == x && item["Y"] == y);
-  if (exists) {
-    alert("この座標はすでに登録されています。");
-    return;
-  }
+  const exists = latestData.find(item => item["X"] == x && item["Y"] == y);
 
   const data = {
     "サーバー名": document.getElementById('server').value,
@@ -152,11 +151,12 @@ document.getElementById('coordForm').addEventListener('submit', e => {
     "レベル": document.getElementById('level').value,
     "取得状況": document.getElementById('status').value
   };
+
   fetch(API_URL, {
     method: 'POST',
     body: JSON.stringify(data)
   }).then(() => {
-    alert("登録完了");
+    alert(exists ? "状態を更新しました" : "登録完了しました");
     loadData();
     showList();
   });
