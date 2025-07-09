@@ -77,7 +77,7 @@
 <div id="map"></div>
 
 <script>
-const API_URL = https://"script.google.com/macros/s/AKfycbwbsqzY0q8pfuUSzXbI47waMxvIvnX30mNomH9v6m81yxZLrQ3oOQMlwrnZbbtwrvA/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwbsqzY0q8pfuUSzXbI47waMxvIvnX30mNomH9v6m81yxZLrQ3oOQMlwrnZbbtwrvA/exec";
 const levelColors = {
   1: "red", 2: "orange", 3: "yellow",
   4: "green", 5: "blue", 6: "purple", 7: "black"
@@ -109,7 +109,7 @@ function loadData() {
         const status = item["取得状況"];
         const color = (status === "取得済み") ? "gray" : levelColors[level] || "black";
 
-        const marker = L.circleMarker([1000 - y, x], {
+        L.circleMarker([1000 - y, x], {
           radius: 7,
           color: color,
           fillColor: color,
@@ -131,7 +131,7 @@ function markObtained(idx) {
   }).then(() => {
     alert("取得済みに変更しました");
     loadData();
-    showList(); // 一覧も再描画
+    showList();
   });
 }
 
