@@ -2,21 +2,22 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>座標マップアプリ</title>
+  <title>座標マップアプリ（完全版）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <style>
     body { font-family: sans-serif; font-size: 14px; margin: 10px; }
     #map { height: 600px; width: 100%; max-width: 800px; border: 1px solid #000; margin: 10px auto; }
-    form, #filterArea, #listLinks { max-width: 800px; margin: 10px auto; }
+    form, #filterArea { max-width: 800px; margin: 10px auto; }
     label, select, input { margin: 5px; font-size: 14px; }
-    button, a.button-link { font-size: 14px; margin: 5px; padding: 5px 10px; text-decoration: none; border: 1px solid #ccc; background: #eee; border-radius: 4px; display: inline-block; }
+    button { font-size: 14px; margin: 5px; }
+    #links { text-align: center; margin-top: 10px; }
   </style>
 </head>
 <body>
 
-<h2>📍 座標マップアプリ</h2>
+<h2>📍 座標マップアプリ（Googleスプレッドシート連携・完全版）</h2>
 
 <form id="coordForm">
   <label>サーバー名: <input type="text" id="server" required></label>
@@ -55,17 +56,26 @@
   <button type="button" onclick="loadData()">🔍 絞り込み表示</button>
 </div>
 
-<div id="listLinks">
-  <a href="list.html?status=%E6%9C%AA%E5%8F%96%E5%BE%97" class="button-link" target="_blank">🟢 未取得一覧</a>
-  <a href="list.html?status=%E5%8F%96%E5%BE%97%E6%B8%88%E3%81%BF" class="button-link" target="_blank">⚪ 取得済み一覧</a>
+<!-- 一覧リンク -->
+<div id="links">
+  <a href="list_uncollected.html" target="_blank">📋 未取得一覧</a> |
+  <a href="list_collected.html" target="_blank">📋 取得済み一覧</a>
 </div>
 
 <div id="map"></div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbxUaBtlgbT2ymqdv_e8oiWSaH4ZjE1GCzH7wotlkVtLjueyK-rWVtqwVnXBsM5WC0g/exec";
-const levelColors = { 1: "red", 2: "orange", 3: "yellow", 4: "green", 5: "blue", 6: "purple", 7: "black" };
-let map = L.map('map', { crs: L.CRS.Simple, minZoom: -1, maxZoom: 2 });
+const API_URL = "https://script.google.com/macros/s/AKfycbw5JEsMFdIHWt3zbkeFFesRfgj1D9Xpd5_Fdg5YrYSmFgvlkCL-7G9lu0-9MONHh5s/exec";
+const levelColors = {
+  1: "red", 2: "orange", 3: "yellow",
+  4: "green", 5: "blue", 6: "purple", 7: "black"
+};
+
+let map = L.map('map', {
+  crs: L.CRS.Simple,
+  minZoom: -1,
+  maxZoom: 2
+});
 let bounds = [[0, 0], [1000, 1000]];
 L.rectangle(bounds, {color: "#ccc", weight: 1}).addTo(map);
 map.fitBounds(bounds);
@@ -80,23 +90,23 @@ function loadData() {
       latestData = data;
       const fLevel = document.getElementById('filterLevel').value;
       const fStatus = document.getElementById('filterStatus').value;
+
       data.forEach((item, idx) => {
-        if (item["取得状況"] === "取得済み") return;
+        if (item["取得状況"] === "取得済み") return; // 取得済みはマップ表示しない
         if ((fLevel && item["レベル"] != fLevel) || (fStatus && item["取得状況"] != fStatus)) return;
 
         const x = Number(item["X"]);
         const y = Number(item["Y"]);
         const level = Number(item["レベル"]);
-        const status = item["取得状況"];
         const color = levelColors[level] || "black";
 
         const marker = L.circleMarker([1000 - y, x], {
-          radius: 6,
+          radius: 7,
           color: color,
           fillColor: color,
           fillOpacity: 0.9
         }).addTo(markerLayer).bindPopup(
-          `<b>${item["サーバー名"]}</b><br>X:${x} Y:${y}<br>Lv:${level}<br>${status}<br>` +
+          `<b>${item["サーバー名"]}</b><br>X:${x} Y:${y}<br>Lv:${level}<br>${item["取得状況"]}<br>` +
           `<button onclick='markObtained(${idx})'>✅ 取得済みに</button>`
         );
       });
@@ -121,8 +131,7 @@ document.getElementById('coordForm').addEventListener('submit', e => {
   const y = document.getElementById('y').value;
   const exists = latestData.some(item => item["X"] == x && item["Y"] == y);
   if (exists) {
-    alert("この座標はすでに登録されています。登録済み状態に切り替えます。");
-    markObtained(latestData.findIndex(item => item["X"] == x && item["Y"] == y));
+    alert("この座標はすでに登録されています。");
     return;
   }
 
@@ -144,5 +153,6 @@ document.getElementById('coordForm').addEventListener('submit', e => {
 
 loadData();
 </script>
+
 </body>
 </html>

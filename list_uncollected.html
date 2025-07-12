@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>未取得一覧</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: sans-serif; font-size: 14px; padding: 10px; }
+    h2 { font-size: 18px; }
+    .level-group { margin-bottom: 15px; }
+  </style>
+</head>
+<body>
+<h2>📋 未取得一覧（レベル別）</h2>
+<div id="list"></div>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbw5JEsMFdIHWt3zbkeFFesRfgj1D9Xpd5_Fdg5YrYSmFgvlkCL-7G9lu0-9MONHh5s/exec";
+
+fetch(API_URL)
+  .then(res => res.json())
+  .then(data => {
+    const levels = {};
+    data.forEach(item => {
+      if (item["取得状況"] === "未取得") {
+        const level = item["レベル"];
+        if (!levels[level]) levels[level] = [];
+        levels[level].push(item);
+      }
+    });
+
+    const listDiv = document.getElementById('list');
+    for (const level of Object.keys(levels).sort()) {
+      const group = levels[level];
+      const div = document.createElement('div');
+      div.className = 'level-group';
+      div.innerHTML = `<h3>🔹 Lv.${level}</h3>` +
+        group.map(item => `🗺️ ${item["サーバー名"]} / X:${item["X"]}, Y:${item["Y"]}<br>`).join('');
+      listDiv.appendChild(div);
+    }
+  });
+</script>
+</body>
+</html>
