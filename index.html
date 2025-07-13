@@ -1,11 +1,9 @@
 <!DOCTYPE html>
 <script>
   const password = prompt("パスワードを入力してください：");
-  const correctPassword = "your_password_here"; // ← 任意のパスワードに変更
-
-  if (password !== correctPassword) {
-    alert("wareranochonnma");
-    window.location.href = "https://www.google.com"; // 拒否時の遷移先
+  if (password !== "wareranochonnma") {
+    alert("パスワードが違います");
+    window.location.href = "https://www.google.com";
   }
 </script>
 <html lang="ja">
