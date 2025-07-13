@@ -3,49 +3,41 @@
 <head>
   <meta charset="UTF-8">
   <title>取得済み一覧</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body { font-family: sans-serif; text-align: center; }
+    body { font-family: sans-serif; padding: 20px; }
+    h2 { color: green; }
     .level-block { margin-bottom: 20px; }
-    .level-title { font-weight: bold; font-size: 18px; margin: 10px 0; }
   </style>
 </head>
 <body>
-  <h2>📋 取得済み一覧</h2>
-  <div id="list"></div>
+<h2>📋 取得済み一覧（レベル別）</h2>
+<div id="list"></div>
 
-  <script>
-  const API_URL = "https://script.google.com/macros/s/AKfycbwOlBSq7OFtpcV7mj2RFPdUbaIrIVJWKQzzLDNUAzIvH4UHtCOFWQ_I8-wHoW967_Y/exec";
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbxwkkPj57VFQkovFmU1vryHLYQEMxSOD2JWpVhuK-_P6LsyBn59fw_O25o579F19dw/exec";
 
-  fetch(API_URL)
-    .then(res => res.json())
-    .then(data => {
-      const grouped = {};
-      data.forEach(d => {
-        if (d.取得状況 === "取得済み") {
-          if (!grouped[d.レベル]) grouped[d.レベル] = [];
-          grouped[d.レベル].push(`${d.サーバー名} / X:${d.X}, Y:${d.Y}`);
-        }
-      });
-
-      const container = document.getElementById("list");
-      for (const level in grouped) {
-        const block = document.createElement("div");
-        block.className = "level-block";
-        const title = document.createElement("div");
-        title.className = "level-title";
-        title.textContent = `レベル ${level}`;
-        block.appendChild(title);
-
-        grouped[level].forEach(entry => {
-          const p = document.createElement("div");
-          p.textContent = entry;
-          block.appendChild(p);
-        });
-
-        container.appendChild(block);
+fetch(API_URL)
+  .then(res => res.json())
+  .then(data => {
+    const grouped = {};
+    data.forEach(d => {
+      if (d.取得状況 === "取得済み") {
+        const level = d.レベル;
+        if (!grouped[level]) grouped[level] = [];
+        grouped[level].push(d);
       }
     });
-  </script>
+
+    const container = document.getElementById("list");
+    Object.keys(grouped).sort().forEach(level => {
+      const div = document.createElement("div");
+      div.className = "level-block";
+      div.innerHTML = `<h3>レベル ${level}</h3><ul>` +
+        grouped[level].map(d => `<li>${d.サーバー名} / X:${d.X}, Y:${d.Y}</li>`).join("") +
+        `</ul>`;
+      container.appendChild(div);
+    });
+  });
+</script>
 </body>
 </html>
