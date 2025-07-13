@@ -2,39 +2,34 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>座標マップ（1000×1000 グリッド）</title>
+  <title>座標マップ（1000×1000）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <style>
-    body { font-family: sans-serif; font-size: 14px; margin: 10px; }
-    #map { height: 800px; width: 100%; max-width: 1000px; margin: 10px auto; border: 1px solid #333; }
-    form, .links { max-width: 1000px; margin: 10px auto; text-align: center; }
-    label, select, input { margin: 5px; font-size: 14px; }
-    button { font-size: 14px; margin: 5px; }
-    a { margin: 0 10px; font-weight: bold; }
+    body { font-family: sans-serif; margin: 10px; }
+    #map { height: 800px; width: 100%; max-width: 1000px; border: 1px solid #333; margin: 10px auto; }
+    form { max-width: 1000px; margin: 10px auto; }
+    input, select, button { margin: 5px; }
+    .links a { margin: 0 10px; text-decoration: none; color: purple; font-weight: bold; }
   </style>
 </head>
 <body>
 
-<h2>📍 座標マップアプリ（グリッド 1000×1000）</h2>
+<h2>📍 座標マップ（未取得のみ表示）</h2>
 
 <form id="coordForm">
-  <label>サーバー名: <input type="text" id="server" required></label>
-  <label>X: <input type="number" id="x" required></label>
-  <label>Y: <input type="number" id="y" required></label>
-  <label>レベル:
-    <select id="level">
-      <option>1</option><option>2</option><option>3</option>
-      <option>4</option><option>5</option><option>6</option><option>7</option>
-    </select>
-  </label>
-  <label>状態:
-    <select id="status">
-      <option>未取得</option>
-      <option>取得済み</option>
-    </select>
-  </label>
+  サーバー名: <input type="text" id="server" required>
+  X: <input type="number" id="x" required>
+  Y: <input type="number" id="y" required>
+  レベル: <select id="level">
+    <option>1</option><option>2</option><option>3</option><option>4</option>
+    <option>5</option><option>6</option><option>7</option>
+  </select>
+  状態: <select id="status">
+    <option>未取得</option>
+    <option>取得済み</option>
+  </select>
   <button type="submit">登録</button>
 </form>
 
@@ -46,22 +41,20 @@
 <div id="map"></div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbz26HOI5KLWWUOi9e99ijj1TRbqaEsfPaBHYdVpjGaevtbNUtIfLcip0RKsiLRl0Lg/exec";
-const levelColors = {
-  1: "red", 2: "orange", 3: "yellow",
-  4: "green", 5: "blue", 6: "purple", 7: "black"
-};
-
+const API_URL = "https://script.google.com/macros/s/AKfycbwpwOm3irBxsyM-n9Q1wkrgewUKCeXSW0xRa4xM5UG-cwyrSgyV0wYA852sdR7Qafw/exec";
 let map = L.map('map', {
   crs: L.CRS.Simple,
-  minZoom: -1,
-  maxZoom: 2
+  minZoom: -2
 });
-let bounds = [[0, 0], [1000, 1000]];
-L.rectangle(bounds, {color: "#ccc", weight: 1}).addTo(map);
+let bounds = [[0,0],[1000,1000]];
 map.fitBounds(bounds);
 
-let markerLayer = L.layerGroup().addTo(map);
+const grid = L.layerGroup().addTo(map);
+for (let i = 0; i <= 1000; i += 100) {
+  L.polyline([[0, i], [1000, i]], {color: '#ccc'}).addTo(grid);
+  L.polyline([[i, 0], [i, 1000]], {color: '#ccc'}).addTo(grid);
+}
+const markerLayer = L.layerGroup().addTo(map);
 let latestData = [];
 
 function loadData() {
@@ -71,21 +64,18 @@ function loadData() {
     .then(data => {
       latestData = data;
       data.forEach((item, idx) => {
-        if (item["取得状況"] === "取得済み") return;
-
+        if (item["取得状況"] !== "未取得") return;
         const x = Number(item["X"]);
         const y = Number(item["Y"]);
         const level = Number(item["レベル"]);
-        const color = levelColors[level] || "black";
-
         const marker = L.circleMarker([1000 - y, x], {
           radius: 6,
-          color: color,
-          fillColor: color,
+          color: "black",
+          fillColor: "black",
           fillOpacity: 0.9
         }).addTo(markerLayer).bindPopup(
-          `<b>${item["サーバー名"]}</b><br>X:${x} Y:${y}<br>Lv:${level}<br>` +
-          `<button onclick='markObtained(${idx})'>✅ 取得済みに</button>`
+          `${item["サーバー名"]} / X:${x}, Y:${y} / Lv.${level}<br>` +
+          `<button onclick="markObtained(${idx})">✅ 取得済みに</button>`
         );
       });
     });
@@ -95,44 +85,30 @@ function markObtained(idx) {
   const item = latestData[idx];
   item["取得状況"] = "取得済み";
   fetch(API_URL, {
-    method: 'POST',
+    method: "POST",
     body: JSON.stringify(item)
-  }).then(() => {
-    alert("取得済みに変更しました");
-    loadData();
-  });
+  }).then(() => loadData());
 }
 
-document.getElementById('coordForm').addEventListener('submit', e => {
+document.getElementById("coordForm").addEventListener("submit", e => {
   e.preventDefault();
-  const x = document.getElementById('x').value;
-  const y = document.getElementById('y').value;
-
-  const exists = latestData.some(item => item["X"] == x && item["Y"] == y);
-  if (exists) {
-    alert("この座標はすでに登録されています。");
-    return;
-  }
-
   const data = {
-    "サーバー名": document.getElementById('server').value,
-    "X": x,
-    "Y": y,
-    "レベル": document.getElementById('level').value,
-    "取得状況": document.getElementById('status').value
+    サーバー名: document.getElementById("server").value,
+    X: Number(document.getElementById("x").value),
+    Y: Number(document.getElementById("y").value),
+    レベル: Number(document.getElementById("level").value),
+    取得状況: document.getElementById("status").value
   };
-
   fetch(API_URL, {
-    method: 'POST',
+    method: "POST",
     body: JSON.stringify(data)
-  }).then(() => {
-    alert("登録しました");
+  }).then(res => res.text()).then(() => {
+    alert("登録完了");
     loadData();
   });
 });
 
 loadData();
 </script>
-
 </body>
 </html>

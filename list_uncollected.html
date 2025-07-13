@@ -2,45 +2,39 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>未取得一覧（レベル別・縦）</title>
+  <title>未取得一覧（レベル別）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body { font-family: sans-serif; font-size: 14px; margin: 20px; }
-    h2 { text-align: center; }
-    .level-group { margin: 20px 0; }
-    .entry { margin-left: 20px; }
+    body { font-family: sans-serif; margin: 20px; }
+    h2 { color: green; }
+    .level-group { margin-bottom: 20px; }
   </style>
 </head>
 <body>
-  <h2>🟢 未取得一覧（レベル別）</h2>
-  <div id="listArea">読み込み中...</div>
+<h2>📋 未取得一覧（レベル別）</h2>
+<div id="list"></div>
 
-  <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbz26HOI5KLWWUOi9e99ijj1TRbqaEsfPaBHYdVpjGaevtbNUtIfLcip0RKsiLRl0Lg/exec";
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbwpwOm3irBxsyM-n9Q1wkrgewUKCeXSW0xRa4xM5UG-cwyrSgyV0wYA852sdR7Qafw/exec";
+fetch(API_URL)
+  .then(res => res.json())
+  .then(data => {
+    const filtered = data.filter(d => d["取得状況"] === "未取得");
+    const grouped = {};
+    filtered.forEach(d => {
+      const lvl = "Lv." + d["レベル"];
+      if (!grouped[lvl]) grouped[lvl] = [];
+      grouped[lvl].push(`${d["サーバー名"]} / X:${d["X"]}, Y:${d["Y"]}`);
+    });
 
-    fetch(API_URL)
-      .then(res => res.json())
-      .then(data => {
-        const listArea = document.getElementById("listArea");
-        const grouped = {};
-
-        data.forEach(d => {
-          if (d["取得状況"] !== "未取得") return;
-          const level = d["レベル"];
-          if (!grouped[level]) grouped[level] = [];
-          grouped[level].push(d);
-        });
-
-        listArea.innerHTML = "";
-        Object.keys(grouped).sort((a, b) => a - b).forEach(level => {
-          const div = document.createElement("div");
-          div.className = "level-group";
-          div.innerHTML = `<h3>Lv.${level}</h3>` + grouped[level].map(d =>
-            `<div class="entry">🗺️ ${d["サーバー名"]} / X:${d["X"]} / Y:${d["Y"]}</div>`
-          ).join("");
-          listArea.appendChild(div);
-        });
-      });
-  </script>
+    const listDiv = document.getElementById("list");
+    for (const lvl in grouped) {
+      const div = document.createElement("div");
+      div.className = "level-group";
+      div.innerHTML = `<h3>🔹 ${lvl}</h3>` + grouped[lvl].map(v => `📘 ${v}`).join("<br>");
+      listDiv.appendChild(div);
+    }
+  });
+</script>
 </body>
 </html>
