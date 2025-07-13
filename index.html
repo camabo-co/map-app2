@@ -7,11 +7,13 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <style>
-    body { font-family: sans-serif; margin: 10px; }
-    #map { height: 800px; width: 100%; max-width: 1000px; margin: 10px auto; background: #eee; }
-    form { max-width: 1000px; margin: 10px auto; }
-    label, select, input { margin: 5px; }
-    button { margin: 5px; }
+    body { font-family: sans-serif; text-align: center; }
+    #map { height: 800px; width: 800px; margin: 10px auto; background: #eee; }
+    form { margin-bottom: 10px; }
+    label { margin: 0 5px; }
+    input, select { padding: 3px; font-size: 14px; }
+    button { padding: 5px 10px; font-size: 14px; }
+    a { margin: 0 10px; font-weight: bold; color: purple; text-decoration: none; }
   </style>
 </head>
 <body>
@@ -37,7 +39,7 @@
   <button type="submit">登録</button>
 </form>
 
-<div style="text-align:center">
+<div>
   <a href="list_uncollected.html" target="_blank">📋 未取得一覧</a>
   <a href="list_collected.html" target="_blank">📋 取得済み一覧</a>
 </div>
@@ -47,54 +49,50 @@
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbwpwOm3irBxsyM-n9Q1wkrgewUKCeXSW0xRa4xM5UG-cwyrSgyV0wYA852sdR7Qafw/exec";
 
-// Leafletマップ初期化（グリッド1000×1000）
 const map = L.map('map', {
   crs: L.CRS.Simple,
   minZoom: -4,
   maxZoom: 4
 });
-const bounds = [[0,0], [1000,1000]];
-const image = L.rectangle(bounds, {color: "#ccc", weight: 1, fillOpacity: 0}).addTo(map);
+const bounds = [[0, 0], [1000, 1000]];
 map.fitBounds(bounds);
+map.setView([500, 500], 0);  // 中央表示 & ズーム
 
-// グリッド線描画
+// グリッド表示（100ピクセル単位）
 for (let i = 0; i <= 1000; i += 100) {
   L.polyline([[i, 0], [i, 1000]], {color: "#ccc", weight: 1}).addTo(map);
   L.polyline([[0, i], [1000, i]], {color: "#ccc", weight: 1}).addTo(map);
 }
 
-// 未取得データのみ表示
+// 登録済み（未取得）座標マーカー表示
 fetch(API_URL)
   .then(res => res.json())
   .then(data => {
-    data.filter(d => d.取得状況 === "未取得").forEach(d => {
-      const x = Number(d.X);
-      const y = Number(d.Y);
-      if (!isNaN(x) && !isNaN(y)) {
-        const marker = L.circleMarker([y, x], {radius: 6, color: 'black'}).addTo(map);
-        marker.bindPopup(`${d.サーバー名} / X:${d.X}, Y:${d.Y} / Lv:${d.レベル}<br><button onclick="markAsCollected('${d.X}', '${d.Y}', '${d.レベル}')">取得済みに変更</button>`);
+    data.forEach(d => {
+      if (d.取得状況 === "未取得") {
+        const marker = L.circleMarker([d.Y, d.X], { radius: 6, color: "black", fillOpacity: 1 }).addTo(map);
+        marker.bindPopup(`${d.サーバー名} / X:${d.X}, Y:${d.Y} / Lv:${d.レベル}`);
+        marker.on("click", () => {
+          if (confirm("この座標を取得済みにしますか？")) {
+            fetch(API_URL, {
+              method: "POST",
+              body: JSON.stringify({
+                サーバー名: d.サーバー名,
+                X: d.X,
+                Y: d.Y,
+                レベル: d.レベル,
+                取得状況: "取得済み"
+              }),
+              headers: { "Content-Type": "application/json" }
+            }).then(() => location.reload());
+          }
+        });
       }
     });
   });
 
-function markAsCollected(x, y, level) {
-  const data = {
-    サーバー名: "N/A",
-    X: x,
-    Y: y,
-    レベル: level,
-    取得状況: "取得済み"
-  };
-  fetch(API_URL, {
-    method: "POST",
-    body: JSON.stringify(data)
-  }).then(() => {
-    alert("取得済みに変更しました");
-    location.reload();
-  });
-}
-
-document.getElementById("coordForm").addEventListener("submit", e => {
+// 登録フォーム処理
+document.getElementById("coordForm").addEventListener("submit", function(e) {
   e.preventDefault();
   const data = {
     サーバー名: document.getElementById("server").value,
@@ -103,18 +101,17 @@ document.getElementById("coordForm").addEventListener("submit", e => {
     レベル: document.getElementById("level").value,
     取得状況: document.getElementById("status").value
   };
+
   fetch(API_URL, {
     method: "POST",
-    body: JSON.stringify(data)
-  }).then(res => res.text()).then(text => {
-    if (text === "OK") {
-      alert("登録しました");
-      location.reload();
-    } else {
-      alert(text);
-    }
+    body: JSON.stringify(data),
+    headers: { "Content-Type": "application/json" }
+  }).then(res => res.text()).then(res => {
+    alert(res);
+    location.reload();
   });
 });
 </script>
+
 </body>
 </html>
