@@ -1,99 +1,120 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8">
   <title>座標マップ（未取得のみ表示）</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <style>
-    body { font-family: sans-serif; margin: 10px; text-align: center; }
-    #map { height: 800px; width: 100%; max-width: 1000px; margin: 10px auto; border: 1px solid #444; background: #eee; }
-    form { margin-bottom: 10px; }
-    input, select, button { margin: 4px; padding: 4px; font-size: 14px; }
-    a { margin: 0 10px; font-weight: bold; color: purple; text-decoration: none; }
+    body { font-family: sans-serif; margin: 10px; }
+    #map { height: 800px; width: 100%; max-width: 1000px; margin: 10px auto; background: #eee; }
+    form { max-width: 1000px; margin: 10px auto; }
+    label, select, input { margin: 5px; }
+    button { margin: 5px; }
   </style>
 </head>
 <body>
-  <h2>📍 座標マップ（未取得のみ表示）</h2>
-  <form id="coordForm">
-    サーバー名: <input type="text" id="server" required>
-    X: <input type="number" id="x" required>
-    Y: <input type="number" id="y" required>
-    レベル:
+
+<h2>📍 座標マップ（未取得のみ表示）</h2>
+
+<form id="coordForm">
+  <label>サーバー名: <input type="text" id="server" required></label>
+  <label>X: <input type="number" id="x" required></label>
+  <label>Y: <input type="number" id="y" required></label>
+  <label>レベル:
     <select id="level">
       <option>1</option><option>2</option><option>3</option>
       <option>4</option><option>5</option><option>6</option><option>7</option>
     </select>
-    状態:
+  </label>
+  <label>状態:
     <select id="status">
       <option>未取得</option>
       <option>取得済み</option>
     </select>
-    <button type="submit">登録</button>
-  </form>
+  </label>
+  <button type="submit">登録</button>
+</form>
 
-  <div>
-    <a href="list_uncollected.html" target="_blank">📋 未取得一覧</a>
-    <a href="list_collected.html" target="_blank">📋 取得済み一覧</a>
-  </div>
+<div style="text-align:center">
+  <a href="list_uncollected.html" target="_blank">📋 未取得一覧</a>
+  <a href="list_collected.html" target="_blank">📋 取得済み一覧</a>
+</div>
 
-  <div id="map"></div>
+<div id="map"></div>
 
-  <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbwpwOm3irBxsyM-n9Q1wkrgewUKCeXSW0xRa4xM5UG-cwyrSgyV0wYA852sdR7Qafw/exec";
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbwpwOm3irBxsyM-n9Q1wkrgewUKCeXSW0xRa4xM5UG-cwyrSgyV0wYA852sdR7Qafw/exec";
 
-    const map = L.map('map', {
-      crs: L.CRS.Simple,
-      minZoom: -1,
-      maxZoom: 4,
-      zoomSnap: 1,
-      zoom: 1,
-      center: [500, 500]
+// Leafletマップ初期化（グリッド1000×1000）
+const map = L.map('map', {
+  crs: L.CRS.Simple,
+  minZoom: -4,
+  maxZoom: 4
+});
+const bounds = [[0,0], [1000,1000]];
+const image = L.rectangle(bounds, {color: "#ccc", weight: 1, fillOpacity: 0}).addTo(map);
+map.fitBounds(bounds);
+
+// グリッド線描画
+for (let i = 0; i <= 1000; i += 100) {
+  L.polyline([[i, 0], [i, 1000]], {color: "#ccc", weight: 1}).addTo(map);
+  L.polyline([[0, i], [1000, i]], {color: "#ccc", weight: 1}).addTo(map);
+}
+
+// 未取得データのみ表示
+fetch(API_URL)
+  .then(res => res.json())
+  .then(data => {
+    data.filter(d => d.取得状況 === "未取得").forEach(d => {
+      const x = Number(d.X);
+      const y = Number(d.Y);
+      if (!isNaN(x) && !isNaN(y)) {
+        const marker = L.circleMarker([y, x], {radius: 6, color: 'black'}).addTo(map);
+        marker.bindPopup(`${d.サーバー名} / X:${d.X}, Y:${d.Y} / Lv:${d.レベル}<br><button onclick="markAsCollected('${d.X}', '${d.Y}', '${d.レベル}')">取得済みに変更</button>`);
+      }
     });
+  });
 
-    const bounds = [[0, 0], [1000, 1000]];
-    map.setMaxBounds(bounds);
-    map.fitBounds(bounds);
+function markAsCollected(x, y, level) {
+  const data = {
+    サーバー名: "N/A",
+    X: x,
+    Y: y,
+    レベル: level,
+    取得状況: "取得済み"
+  };
+  fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify(data)
+  }).then(() => {
+    alert("取得済みに変更しました");
+    location.reload();
+  });
+}
 
-    // グリッド線描画（100ピクセルごと）
-    const grid = L.layerGroup().addTo(map);
-    for (let i = 0; i <= 1000; i += 100) {
-      L.polyline([[i, 0], [i, 1000]], { color: '#ccc', weight: 1 }).addTo(grid); // 縦
-      L.polyline([[0, i], [1000, i]], { color: '#ccc', weight: 1 }).addTo(grid); // 横
+document.getElementById("coordForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const data = {
+    サーバー名: document.getElementById("server").value,
+    X: document.getElementById("x").value,
+    Y: document.getElementById("y").value,
+    レベル: document.getElementById("level").value,
+    取得状況: document.getElementById("status").value
+  };
+  fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify(data)
+  }).then(res => res.text()).then(text => {
+    if (text === "OK") {
+      alert("登録しました");
+      location.reload();
+    } else {
+      alert(text);
     }
-
-    // 座標取得してマーカー描画
-    fetch(API_URL)
-      .then(res => res.json())
-      .then(data => {
-        data.filter(d => d.取得状況 === "未取得").forEach(d => {
-          const marker = L.circleMarker([d.Y, d.X], {
-            radius: 6,
-            color: "black",
-            fillOpacity: 0.8
-          }).addTo(map).bindPopup(`サーバー: ${d.サーバー名}<br>X:${d.X}, Y:${d.Y}, Lv:${d.レベル}`);
-        });
-      });
-
-    document.getElementById("coordForm").addEventListener("submit", function(e) {
-      e.preventDefault();
-      const data = {
-        サーバー名: document.getElementById("server").value,
-        X: document.getElementById("x").value,
-        Y: document.getElementById("y").value,
-        レベル: document.getElementById("level").value,
-        取得状況: document.getElementById("status").value
-      };
-
-      fetch(API_URL, {
-        method: "POST",
-        body: JSON.stringify(data)
-      }).then(res => res.text()).then(msg => {
-        alert(msg === "OK" ? "登録しました！" : msg);
-        location.reload();
-      });
-    });
-  </script>
+  });
+});
+</script>
 </body>
 </html>
