@@ -2,111 +2,33 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>📍 座標マップ（未取得のみ表示）</title>
+  <title>座標マップ（1000×1000グリッド）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <style>
-    body { font-family: sans-serif; font-size: 14px; margin: 10px; text-align: center; }
+    body { font-family: sans-serif; font-size: 14px; text-align: center; margin: 0; padding: 0; }
     #map { height: 800px; width: 100%; max-width: 1000px; margin: 10px auto; border: 1px solid #333; }
     form { max-width: 1000px; margin: 10px auto; }
     label, select, input { margin: 5px; font-size: 14px; }
     button { font-size: 14px; margin: 5px; }
-    .links a { margin: 0 10px; color: purple; text-decoration: none; font-weight: bold; }
+    .links a { margin: 0 10px; font-weight: bold; text-decoration: none; color: blue; }
   </style>
 </head>
 <body>
 
+<!-- パスワード認証 -->
 <script>
   const password = prompt("パスワードを入力してください：");
-  const correctPassword = "wareranochonnma";
-  if (password !== correctPassword) {
+  if (password !== "wareranochonnma") {
     alert("パスワードが違います");
-    window.location.href = "https://google.com";
+    window.location.href = "https://www.google.com";
   }
 </script>
 
-<h2>📍 座標マップ（未取得のみ表示）</h2>
+<h2>📍 座標マップ（1000×1000グリッド / 未取得のみ表示）</h2>
 
 <form id="coordForm">
   <label>サーバー名: <input type="text" id="server" required></label>
   <label>X: <input type="number" id="x" required></label>
-  <label>Y: <input type="number" id="y" required></label>
-  <label>レベル:
-    <select id="level">
-      <option>1</option><option>2</option><option>3</option>
-      <option>4</option><option>5</option><option>6</option><option>7</option>
-    </select>
-  </label>
-  <label>状態:
-    <select id="status">
-      <option>未取得</option>
-      <option>取得済み</option>
-    </select>
-  </label>
-  <button type="submit">登録</button>
-</form>
-
-<div class="links">
-  <a href="list_uncollected.html" target="_blank">📋 未取得一覧</a>
-  <a href="list_collected.html" target="_blank">📋 取得済み一覧</a>
-</div>
-
-<div id="map"></div>
-
-<script>
-const API_URL = "https://script.google.com/macros/s/AKfycbwpwOm3irBxsyM-n9Q1wkrgewUKCeXSW0xRa4xM5UG-cwyrSgyV0wYA852sdR7Qafw/exec";
-
-const map = L.map('map', {
-  crs: L.CRS.Simple,
-  minZoom: -1,
-  maxZoom: 4
-});
-
-const bounds = [[0, 0], [1000, 1000]];
-const image = L.rectangle(bounds, {color: "#ccc", weight: 1, fillOpacity: 0.05}).addTo(map);
-map.fitBounds(bounds);
-
-// グリッド線描画（100ピクセルごと）
-for (let i = 0; i <= 1000; i += 100) {
-  L.polyline([[0, i], [1000, i]], {color: "#ccc", weight: 1}).addTo(map);
-  L.polyline([[i, 0], [i, 1000]], {color: "#ccc", weight: 1}).addTo(map);
-}
-
-fetch(API_URL)
-  .then(res => res.json())
-  .then(data => {
-    data.filter(d => d.取得状況 === "未取得").forEach(d => {
-      const x = parseFloat(d.X);
-      const y = parseFloat(d.Y);
-      if (!isNaN(x) && !isNaN(y)) {
-        L.circleMarker([y, x], {radius: 5, color: 'black'}).addTo(map);
-      }
-    });
-  });
-
-document.getElementById("coordForm").addEventListener("submit", function(e) {
-  e.preventDefault();
-
-  const data = {
-    サーバー名: document.getElementById("server").value,
-    X: document.getElementById("x").value,
-    Y: document.getElementById("y").value,
-    レベル: document.getElementById("level").value,
-    取得状況: document.getElementById("status").value
-  };
-
-  fetch(API_URL, {
-    method: "POST",
-    body: JSON.stringify(data),
-    headers: { "Content-Type": "application/json" }
-  }).then(res => res.text())
-    .then(txt => {
-      alert("登録しました！");
-      location.reload();
-    });
-});
-</script>
-
-</body>
-</html>
+  <label>Y: <i
