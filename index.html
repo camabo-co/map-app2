@@ -1,34 +1,21 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>座標マップ（未取得のみ表示）</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <style>
-    body {
-      font-family: sans-serif;
-      text-align: center;
-    }
+    body { font-family: sans-serif; text-align: center; }
     #map {
       height: 1000px;
       width: 1000px;
       margin: 20px auto;
-      background-color: #eee;
+      background-color: #f2f2f2;
     }
-    form {
-      margin-bottom: 10px;
-    }
-    label {
-      margin: 0 5px;
-    }
-    input, select {
-      padding: 3px;
-      font-size: 14px;
-    }
-    button {
-      padding: 5px 10px;
+    label, input, select, button {
+      margin: 5px;
       font-size: 14px;
     }
     a {
@@ -72,34 +59,32 @@
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbwpwOm3irBxsyM-n9Q1wkrgewUKCeXSW0xRa4xM5UG-cwyrSgyV0wYA852sdR7Qafw/exec";
 
-// 地図の初期設定（1000×1000グリッド）
+// 地図初期化
 const map = L.map('map', {
   crs: L.CRS.Simple,
   minZoom: -4,
   maxZoom: 2,
   zoomSnap: 0.1
 });
-
 const bounds = [[0, 0], [1000, 1000]];
 map.fitBounds(bounds);
 map.setZoom(0);
 
-// グリッド線（100ピクセル単位）
-for (let i = 0; i <= 1000; i += 100) {
-  L.polyline([[i, 0], [i, 1000]], {color: "#ccc", weight: 1}).addTo(map);
-  L.polyline([[0, i], [1000, i]], {color: "#ccc", weight: 1}).addTo(map);
+// 1000×1000 グリッド線を描画
+for (let i = 0; i <= 1000; i++) {
+  L.polyline([[i, 0], [i, 1000]], {color: "#ccc", weight: 0.5}).addTo(map); // 縦線
+  L.polyline([[0, i], [1000, i]], {color: "#ccc", weight: 0.5}).addTo(map); // 横線
 }
 
-// マーカー読み込み
+// 未取得マーカーを表示
 fetch(API_URL)
   .then(res => res.json())
   .then(data => {
     data.forEach(d => {
       if (d.取得状況 === "未取得") {
         const marker = L.circleMarker([parseInt(d.Y), parseInt(d.X)], {
-          radius: 6, color: "black", fillOpacity: 1
+          radius: 3, color: "black", fillOpacity: 1
         }).addTo(map);
-
         marker.bindPopup(`${d.サーバー名} / X:${d.X}, Y:${d.Y} / Lv:${d.レベル}`);
         marker.on("click", () => {
           if (confirm("この座標を取得済みにしますか？")) {
@@ -120,7 +105,7 @@ fetch(API_URL)
     });
   });
 
-// 登録フォーム送信
+// 登録処理
 document.getElementById("coordForm").addEventListener("submit", function(e) {
   e.preventDefault();
   const data = {
@@ -130,7 +115,6 @@ document.getElementById("coordForm").addEventListener("submit", function(e) {
     レベル: document.getElementById("level").value,
     取得状況: document.getElementById("status").value
   };
-
   fetch(API_URL, {
     method: "POST",
     body: JSON.stringify(data),
