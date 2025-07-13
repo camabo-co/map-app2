@@ -28,7 +28,7 @@
 </head>
 <body>
 
-<!-- パスワード保護 -->
+<!-- 🔒 パスワード保護 -->
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   const password = prompt("パスワードを入力してください：");
@@ -69,7 +69,7 @@ document.addEventListener("DOMContentLoaded", function () {
 <div id="map"></div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbwIn0UqoXzy6OYhBFuW5VgTgK8oWL3S5bdFN_EIPMWjvR7raBJuaNlWHs9zd36bvBQ/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxkUwvX_9ADUk1xCwZwCOLy7PbccnUYr1diDe22hNL5E_UtfQWnpIdOGztxX_Q9qbA/exec";
 
 // 地図初期化
 const map = L.map('map', {
@@ -82,13 +82,13 @@ const bounds = [[0, 0], [1000, 1000]];
 map.fitBounds(bounds);
 map.setZoom(0);
 
-// 1000×1000 グリッド線を描画
+// グリッド線（1000×1000）
 for (let i = 0; i <= 1000; i++) {
   L.polyline([[i, 0], [i, 1000]], {color: "#ccc", weight: 0.5}).addTo(map);
   L.polyline([[0, i], [1000, i]], {color: "#ccc", weight: 0.5}).addTo(map);
 }
 
-// マーカー表示（未取得のみ）
+// 未取得マーカーの表示
 fetch(API_URL)
   .then(res => res.json())
   .then(data => {
@@ -123,7 +123,7 @@ fetch(API_URL)
     });
   });
 
-// 新規登録処理
+// 登録処理
 document.getElementById("coordForm").addEventListener("submit", function(e) {
   e.preventDefault();
   const data = {
