@@ -14,10 +14,7 @@
       margin: 20px auto;
       background-color: #f2f2f2;
     }
-    label, input, select, button {
-      margin: 5px;
-      font-size: 14px;
-    }
+    label, input, select, button { margin: 5px; font-size: 14px; }
     a {
       margin: 0 10px;
       font-weight: bold;
@@ -28,7 +25,6 @@
 </head>
 <body>
 
-<!-- パスワード保護 -->
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   const password = prompt("パスワードを入力してください：");
@@ -69,9 +65,8 @@ document.addEventListener("DOMContentLoaded", function () {
 <div id="map"></div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbxcz9gqTCOfeeLniPn2XcN5tVZqpR_mSvP5iYNZ2GtQBWbGMLAGeUFoIv6-SK0MaOc/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwOlBSq7OFtpcV7mj2RFPdUbaIrIVJWKQzzLDNUAzIvH4UHtCOFWQ_I8-wHoW967_Y/exec";
 
-// 地図初期化
 const map = L.map('map', {
   crs: L.CRS.Simple,
   minZoom: -4,
@@ -82,13 +77,11 @@ const bounds = [[0, 0], [1000, 1000]];
 map.fitBounds(bounds);
 map.setZoom(0);
 
-// 1000×1000 グリッド線を描画
 for (let i = 0; i <= 1000; i++) {
   L.polyline([[i, 0], [i, 1000]], {color: "#ccc", weight: 0.5}).addTo(map);
   L.polyline([[0, i], [1000, i]], {color: "#ccc", weight: 0.5}).addTo(map);
 }
 
-// 未取得マーカーを表示
 fetch(API_URL)
   .then(res => res.json())
   .then(data => {
@@ -110,20 +103,17 @@ fetch(API_URL)
                 取得状況: "取得済み"
               }),
               headers: { "Content-Type": "application/json" }
-            })
-            .then(res => res.json())
-            .then(result => {
-              alert(result.message);
-              location.reload();
-            })
-            .catch(err => alert("エラー：" + err));
+            }).then(res => res.json())
+              .then(result => {
+                alert(result.message);
+                location.reload();
+              });
           }
         });
       }
     });
   });
 
-// 登録処理
 document.getElementById("coordForm").addEventListener("submit", function(e) {
   e.preventDefault();
   const data = {
