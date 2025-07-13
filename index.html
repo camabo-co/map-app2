@@ -2,15 +2,15 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>座標マップ（1000×1000）</title>
+  <title>座標マップ（未取得のみ表示）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <style>
     body { font-family: sans-serif; margin: 10px; }
-    #map { height: 800px; width: 100%; max-width: 1000px; border: 1px solid #333; margin: 10px auto; }
+    #map { height: 1000px; width: 100%; max-width: 1000px; border: 1px solid #333; margin: 10px auto; }
     form { max-width: 1000px; margin: 10px auto; }
-    input, select, button { margin: 5px; }
+    input, select, button { margin: 5px; font-size: 14px; }
     .links a { margin: 0 10px; text-decoration: none; color: purple; font-weight: bold; }
   </style>
 </head>
@@ -44,16 +44,20 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbwpwOm3irBxsyM-n9Q1wkrgewUKCeXSW0xRa4xM5UG-cwyrSgyV0wYA852sdR7Qafw/exec";
 let map = L.map('map', {
   crs: L.CRS.Simple,
-  minZoom: -2
+  minZoom: -2,
+  maxBounds: [[0,0],[1000,1000]],
+  maxBoundsViscosity: 1.0
 });
 let bounds = [[0,0],[1000,1000]];
 map.fitBounds(bounds);
 
+// グリッド生成（100pxごとに線）
 const grid = L.layerGroup().addTo(map);
 for (let i = 0; i <= 1000; i += 100) {
-  L.polyline([[0, i], [1000, i]], {color: '#ccc'}).addTo(grid);
-  L.polyline([[i, 0], [i, 1000]], {color: '#ccc'}).addTo(grid);
+  L.polyline([[0, i], [1000, i]], {color: '#bbb', weight: 1}).addTo(grid); // 横線
+  L.polyline([[i, 0], [i, 1000]], {color: '#bbb', weight: 1}).addTo(grid); // 縦線
 }
+
 const markerLayer = L.layerGroup().addTo(map);
 let latestData = [];
 
@@ -67,14 +71,13 @@ function loadData() {
         if (item["取得状況"] !== "未取得") return;
         const x = Number(item["X"]);
         const y = Number(item["Y"]);
-        const level = Number(item["レベル"]);
         const marker = L.circleMarker([1000 - y, x], {
-          radius: 6,
+          radius: 5,
           color: "black",
           fillColor: "black",
-          fillOpacity: 0.9
+          fillOpacity: 1
         }).addTo(markerLayer).bindPopup(
-          `${item["サーバー名"]} / X:${x}, Y:${y} / Lv.${level}<br>` +
+          `${item["サーバー名"]} / X:${x}, Y:${y} / Lv.${item["レベル"]}<br>` +
           `<button onclick="markObtained(${idx})">✅ 取得済みに</button>`
         );
       });
