@@ -1,11 +1,4 @@
 <!DOCTYPE html>
-<script>
-  const password = prompt("パスワードを入力してください：");
-  if (password !== "wareranochonnma") {
-    alert("パスワードが違います");
-    window.location.href = "https://www.google.com";
-  }
-</script>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
@@ -32,6 +25,14 @@
       text-decoration: none;
     }
   </style>
+  <script>
+    const password = prompt("パスワードを入力してください：");
+    const correctPassword = "wareranochonnma";
+    if (password !== correctPassword) {
+      alert("パスワードが違います。");
+      window.location.href = "https://www.google.com";
+    }
+  </script>
 </head>
 <body>
 
