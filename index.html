@@ -1,32 +1,43 @@
 <!DOCTYPE html>
+<script>
+  const password = prompt("パスワードを入力してください：");
+  const correctPassword = "your_password_here"; // ← 任意のパスワードに変更
+
+  if (password !== correctPassword) {
+    alert("wareranochonnma");
+    window.location.href = "https://www.google.com"; // 拒否時の遷移先
+  }
+</script>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>座標マップ（1000×1000グリッド）</title>
+  <title>座標マップ（未取得のみ表示）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <style>
-    body { font-family: sans-serif; font-size: 14px; text-align: center; margin: 0; padding: 0; }
-    #map { height: 800px; width: 100%; max-width: 1000px; margin: 10px auto; border: 1px solid #333; }
-    form { max-width: 1000px; margin: 10px auto; }
-    label, select, input { margin: 5px; font-size: 14px; }
-    button { font-size: 14px; margin: 5px; }
-    .links a { margin: 0 10px; font-weight: bold; text-decoration: none; color: blue; }
+    body { font-family: sans-serif; text-align: center; }
+    #map {
+      height: 1000px;
+      width: 1000px;
+      margin: 20px auto;
+      background-color: #f2f2f2;
+    }
+    label, input, select, button {
+      margin: 5px;
+      font-size: 14px;
+    }
+    a {
+      margin: 0 10px;
+      font-weight: bold;
+      color: purple;
+      text-decoration: none;
+    }
   </style>
 </head>
 <body>
 
-<!-- パスワード認証 -->
-<script>
-  const password = prompt("パスワードを入力してください：");
-  if (password !== "wareranochonnma") {
-    alert("パスワードが違います");
-    window.location.href = "https://www.google.com";
-  }
-</script>
-
-<h2>📍 座標マップ（1000×1000グリッド / 未取得のみ表示）</h2>
+<h2>📍 座標マップ（未取得のみ表示）</h2>
 
 <form id="coordForm">
   <label>サーバー名: <input type="text" id="server" required></label>
@@ -47,7 +58,7 @@
   <button type="submit">登録</button>
 </form>
 
-<div class="links">
+<div>
   <a href="list_uncollected.html" target="_blank">📋 未取得一覧</a>
   <a href="list_collected.html" target="_blank">📋 取得済み一覧</a>
 </div>
@@ -57,86 +68,70 @@
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbwpwOm3irBxsyM-n9Q1wkrgewUKCeXSW0xRa4xM5UG-cwyrSgyV0wYA852sdR7Qafw/exec";
 
-// グリッドマップ（CRS.Simple）
+// 地図初期化
 const map = L.map('map', {
   crs: L.CRS.Simple,
-  minZoom: -1,
-  maxZoom: 4,
-  zoomSnap: 0.1,
-  zoomDelta: 0.1
+  minZoom: -4,
+  maxZoom: 2,
+  zoomSnap: 0.1
 });
-
 const bounds = [[0, 0], [1000, 1000]];
 map.fitBounds(bounds);
+map.setZoom(0);
 
-// グリッド線（100間隔）
-for (let i = 0; i <= 1000; i += 100) {
-  L.polyline([[0, i], [1000, i]], {color: "#ccc", weight: 1}).addTo(map); // 縦線
-  L.polyline([[i, 0], [i, 1000]], {color: "#ccc", weight: 1}).addTo(map); // 横線
+// 1000×1000 グリッド線を描画
+for (let i = 0; i <= 1000; i++) {
+  L.polyline([[i, 0], [i, 1000]], {color: "#ccc", weight: 0.5}).addTo(map); // 縦線
+  L.polyline([[0, i], [1000, i]], {color: "#ccc", weight: 0.5}).addTo(map); // 横線
 }
 
-// マーカー描画（未取得のみ）
+// 未取得マーカーを表示
 fetch(API_URL)
   .then(res => res.json())
   .then(data => {
-    data.filter(d => d.取得状況 === "未取得").forEach((d, idx) => {
-      const x = parseFloat(d.X);
-      const y = parseFloat(d.Y);
-      const level = parseInt(d.レベル);
-      if (!isNaN(x) && !isNaN(y)) {
-        L.circleMarker([y, x], {
-          radius: 5,
-          color: "black",
-          fillColor: "black",
-          fillOpacity: 0.9
-        }).addTo(map).bindPopup(
-          `<b>${d.サーバー名}</b><br>X:${x} Y:${y}<br>Lv:${level}<br>` +
-          `<button onclick="markObtained(${x}, ${y}, ${level})">✅ 取得済みに</button>`
-        );
+    data.forEach(d => {
+      if (d.取得状況 === "未取得") {
+        const marker = L.circleMarker([parseInt(d.Y), parseInt(d.X)], {
+          radius: 3, color: "black", fillOpacity: 1
+        }).addTo(map);
+        marker.bindPopup(`${d.サーバー名} / X:${d.X}, Y:${d.Y} / Lv:${d.レベル}`);
+        marker.on("click", () => {
+          if (confirm("この座標を取得済みにしますか？")) {
+            fetch(API_URL, {
+              method: "POST",
+              body: JSON.stringify({
+                サーバー名: d.サーバー名,
+                X: d.X,
+                Y: d.Y,
+                レベル: d.レベル,
+                取得状況: "取得済み"
+              }),
+              headers: { "Content-Type": "application/json" }
+            }).then(() => location.reload());
+          }
+        });
       }
     });
   });
 
-// 取得済みに変更
-function markObtained(x, y, level) {
-  const data = {
-    サーバー名: "（更新）",
-    X: x,
-    Y: y,
-    レベル: level,
-    取得状況: "取得済み"
-  };
-  fetch(API_URL, {
-    method: "POST",
-    body: JSON.stringify(data),
-    headers: {"Content-Type": "application/json"}
-  }).then(() => {
-    alert("取得済みに変更しました！");
-    location.reload();
-  });
-}
-
 // 登録処理
 document.getElementById("coordForm").addEventListener("submit", function(e) {
   e.preventDefault();
-
   const data = {
     サーバー名: document.getElementById("server").value,
-    X: document.getElementById("x").value,
-    Y: document.getElementById("y").value,
+    X: parseInt(document.getElementById("x").value),
+    Y: parseInt(document.getElementById("y").value),
     レベル: document.getElementById("level").value,
     取得状況: document.getElementById("status").value
   };
-
   fetch(API_URL, {
     method: "POST",
     body: JSON.stringify(data),
-    headers: {"Content-Type": "application/json"}
-  }).then(res => res.text())
-    .then(() => {
-      alert("登録しました！");
-      location.reload();
-    });
+    headers: { "Content-Type": "application/json" }
+  }).then(res => res.text()).then(res => {
+    alert(res);
+    location.reload();
+  });
 });
 </script>
 
