@@ -19,31 +19,36 @@
       border-radius: 4px;
       cursor: pointer;
     }
-    button:hover { background-color: #a00000; }
+    button:hover {
+      background-color: #a00000;
+    }
   </style>
 </head>
 <body>
   <h2>📋 未取得一覧（レベル別）</h2>
   <div id="list">読み込み中...</div>
+
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbyDF1xoyYMOC75L_Nmbdj2u7JIqmQXwvSEtz4MQXxZOyPNyMbY7x6B8UVTbZVcum_I/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbzbFuDdRu7v1zFW-OmQ1QNa1Ug3y3JtKndLptFKwxoucWoP7rRFdJUVM1_Lv2IEeuA/exec";
+
     fetch(API_URL)
       .then(res => res.json())
       .then(data => {
         const grouped = {};
         data.forEach(d => {
           if (d.取得状況 === "未取得") {
-            const lvl = d.レベル;
-            if (!grouped[lvl]) grouped[lvl] = [];
-            grouped[lvl].push(d);
+            (grouped[d.レベル] = grouped[d.レベル] || []).push(d);
           }
         });
+
         const list = document.getElementById("list");
         list.innerHTML = "";
+
         if (Object.keys(grouped).length === 0) {
           list.innerHTML = "<p>未取得座標はありません。</p>";
           return;
         }
+
         Object.keys(grouped).sort().forEach(level => {
           const block = document.createElement("div");
           block.className = "level-block";
@@ -58,8 +63,10 @@
           list.appendChild(block);
         });
       });
+
     function markCollected(coord) {
       if (!confirm(`X:${coord.X}, Y:${coord.Y} を「取得済み」にしますか？`)) return;
+
       fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -71,9 +78,9 @@
           取得状況: "取得済み"
         })
       })
-      .then(r => r.json())
-      .then(res => {
-        alert(res.message || "変更完了");
+      .then(res => res.json())
+      .then(result => {
+        alert(result.message);
         location.reload();
       })
       .catch(err => {

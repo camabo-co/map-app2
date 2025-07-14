@@ -15,9 +15,9 @@
   <div id="list">読み込み中...</div>
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbxZY3zo63-TeGB98cQsbE9JI4ua2jP4Yk4oRDDu4G3lZr039z09x85S9iZMbr8Fi4E/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbzbFuDdRu7v1zFW-OmQ1QNa1Ug3y3JtKndLptFKwxoucWoP7rRFdJUVM1_Lv2IEeuA/exec";
 
-    fetch(API_URL).then(r => r.json()).then(data => {
+    fetch(API_URL).then(res => res.json()).then(data => {
       const grouped = {};
       data.forEach(d => {
         if (d.取得状況 === "取得済み") {
@@ -26,11 +26,11 @@
       });
       const list = document.getElementById('list');
       list.innerHTML = "";
-      Object.keys(grouped).sort().forEach(lvl => {
+      Object.keys(grouped).sort().forEach(level => {
         const div = document.createElement('div');
         div.className = 'level-block';
-        div.innerHTML = `<h3>レベル ${lvl}</h3><ul>` +
-          grouped[lvl].map(d => `<li>${d.サーバー名} / X:${d.X}, Y:${d.Y}</li>`).join('') +
+        div.innerHTML = `<h3>レベル ${level}</h3><ul>` +
+          grouped[level].map(d => `<li>${d.サーバー名} / X:${d.X}, Y:${d.Y}</li>`).join('') +
           '</ul>';
         list.appendChild(div);
       });

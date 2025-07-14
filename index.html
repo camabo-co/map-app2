@@ -14,21 +14,6 @@
   </style>
 </head>
 <body>
-
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-  if (!sessionStorage.getItem("auth")) {
-    const pwd = prompt("パスワードを入力してください：");
-    if (pwd !== "wareranochonnma") {
-      alert("パスワードが違います。");
-      window.location.href = "https://www.google.com";
-    } else {
-      sessionStorage.setItem("auth", "ok");
-    }
-  }
-});
-</script>
-
 <h2>📍 座標マップ（未取得のみ表示）</h2>
 
 <form id="coordForm">
@@ -58,7 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
 <div id="map"></div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbxZY3zo63-TeGB98cQsbE9JI4ua2jP4Yk4oRDDu4G3lZr039z09x85S9iZMbr8Fi4E/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzbFuDdRu7v1zFW-OmQ1QNa1Ug3y3JtKndLptFKwxoucWoP7rRFdJUVM1_Lv2IEeuA/exec";
 
 const map = L.map('map', {
   crs: L.CRS.Simple,
@@ -68,8 +53,9 @@ const map = L.map('map', {
 });
 const bounds = [[0, 0], [1000, 1000]];
 map.fitBounds(bounds);
-map.setZoom(0);
+map.setZoom(-2);
 
+// グリッド線描画
 for (let i = 0; i <= 1000; i += 50) {
   L.polyline([[i, 0], [i, 1000]], {color: "#ccc", weight: 0.5}).addTo(map);
   L.polyline([[0, i], [1000, i]], {color: "#ccc", weight: 0.5}).addTo(map);
@@ -134,6 +120,9 @@ document.getElementById("coordForm").addEventListener("submit", function(e) {
       if (layer instanceof L.CircleMarker) map.removeLayer(layer);
     });
     loadMarkers();
+  })
+  .catch(err => {
+    alert("登録失敗: " + err.message);
   });
 });
 </script>
