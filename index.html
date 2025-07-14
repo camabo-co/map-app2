@@ -15,7 +15,6 @@
 </head>
 <body>
 
-<!-- ✅ パスワード入力（セッション保持） -->
 <script>
 document.addEventListener("DOMContentLoaded", () => {
   if (!sessionStorage.getItem("auth")) {
@@ -59,7 +58,7 @@ document.addEventListener("DOMContentLoaded", () => {
 <div id="map"></div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbx3COM3uzJ5WlX1KHpWbZpfqVz4CzxOP4XnP3rUOx-Kc7Aec7CSkAx-dLL2juN0QHo/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxZY3zo63-TeGB98cQsbE9JI4ua2jP4Yk4oRDDu4G3lZr039z09x85S9iZMbr8Fi4E/exec";
 
 const map = L.map('map', {
   crs: L.CRS.Simple,
@@ -71,13 +70,11 @@ const bounds = [[0, 0], [1000, 1000]];
 map.fitBounds(bounds);
 map.setZoom(0);
 
-// グリッド線描画
 for (let i = 0; i <= 1000; i += 50) {
   L.polyline([[i, 0], [i, 1000]], {color: "#ccc", weight: 0.5}).addTo(map);
   L.polyline([[0, i], [1000, i]], {color: "#ccc", weight: 0.5}).addTo(map);
 }
 
-// マーカー表示
 function loadMarkers() {
   fetch(API_URL)
     .then(res => res.json())
@@ -106,7 +103,7 @@ function loadMarkers() {
                   map.eachLayer(layer => {
                     if (layer instanceof L.CircleMarker) map.removeLayer(layer);
                   });
-                  loadMarkers(); // 再描画（リロード不要）
+                  loadMarkers();
                 });
             }
           });
@@ -114,10 +111,8 @@ function loadMarkers() {
       });
     });
 }
-
 loadMarkers();
 
-// 登録フォーム送信処理
 document.getElementById("coordForm").addEventListener("submit", function(e) {
   e.preventDefault();
   const data = {
@@ -138,13 +133,9 @@ document.getElementById("coordForm").addEventListener("submit", function(e) {
     map.eachLayer(layer => {
       if (layer instanceof L.CircleMarker) map.removeLayer(layer);
     });
-    loadMarkers(); // 再描画
-  })
-  .catch(error => {
-    alert("登録に失敗しました: " + error);
+    loadMarkers();
   });
 });
 </script>
-
 </body>
 </html>

@@ -4,35 +4,37 @@
   <meta charset="UTF-8" />
   <title>取得済み一覧</title>
   <style>
-    body{font-family:sans-serif;padding:20px}
-    h2{color:green}
-    .level-block{margin-bottom:20px}
+    body { font-family: sans-serif; padding: 20px; background: #f9f9f9; color: #333; }
+    h2 { color: green; }
+    .level-block { margin-bottom: 20px; }
+    ul { list-style: none; padding-left: 0; }
   </style>
 </head>
 <body>
-<h2>📋 取得済み一覧（レベル別）</h2>
-<div id="list"></div>
+  <h2>📋 取得済み一覧（レベル別）</h2>
+  <div id="list">読み込み中...</div>
 
-<script>
-const API_URL="https://script.google.com/macros/s/AKfycbx3COM3uzJ5WlX1KHpWbZpfqVz4CzxOP4XnP3rUOx-Kc7Aec7CSkAx-dLL2juN0QHo/exec";
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbxZY3zo63-TeGB98cQsbE9JI4ua2jP4Yk4oRDDu4G3lZr039z09x85S9iZMbr8Fi4E/exec";
 
-fetch(API_URL).then(r=>r.json()).then(data=>{
-  const grouped={};
-  data.forEach(d=>{
-    if(d.取得状況==="取得済み"){
-      (grouped[d.レベル]=grouped[d.レベル]||[]).push(d);
-    }
-  });
-  const list=document.getElementById('list');
-  Object.keys(grouped).sort().forEach(lvl=>{
-    const div=document.createElement('div');
-    div.className='level-block';
-    div.innerHTML=`<h3>レベル ${lvl}</h3><ul>`+
-      grouped[lvl].map(d=>`<li>${d.サーバー名} / X:${d.X}, Y:${d.Y}</li>`).join('')
-      +'</ul>';
-    list.appendChild(div);
-  });
-});
-</script>
+    fetch(API_URL).then(r => r.json()).then(data => {
+      const grouped = {};
+      data.forEach(d => {
+        if (d.取得状況 === "取得済み") {
+          (grouped[d.レベル] = grouped[d.レベル] || []).push(d);
+        }
+      });
+      const list = document.getElementById('list');
+      list.innerHTML = "";
+      Object.keys(grouped).sort().forEach(lvl => {
+        const div = document.createElement('div');
+        div.className = 'level-block';
+        div.innerHTML = `<h3>レベル ${lvl}</h3><ul>` +
+          grouped[lvl].map(d => `<li>${d.サーバー名} / X:${d.X}, Y:${d.Y}</li>`).join('') +
+          '</ul>';
+        list.appendChild(div);
+      });
+    });
+  </script>
 </body>
 </html>
