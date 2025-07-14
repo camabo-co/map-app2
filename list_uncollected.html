@@ -19,18 +19,14 @@
       border-radius: 4px;
       cursor: pointer;
     }
-    button:hover {
-      background-color: #a00000;
-    }
+    button:hover { background-color: #a00000; }
   </style>
 </head>
 <body>
   <h2>📋 未取得一覧（レベル別）</h2>
   <div id="list">読み込み中...</div>
-
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbxZY3zo63-TeGB98cQsbE9JI4ua2jP4Yk4oRDDu4G3lZr039z09x85S9iZMbr8Fi4E/exec";
-
+    const API_URL = "https://script.google.com/macros/s/AKfycbyDF1xoyYMOC75L_Nmbdj2u7JIqmQXwvSEtz4MQXxZOyPNyMbY7x6B8UVTbZVcum_I/exec";
     fetch(API_URL)
       .then(res => res.json())
       .then(data => {
@@ -42,15 +38,12 @@
             grouped[lvl].push(d);
           }
         });
-
         const list = document.getElementById("list");
         list.innerHTML = "";
-
         if (Object.keys(grouped).length === 0) {
           list.innerHTML = "<p>未取得座標はありません。</p>";
           return;
         }
-
         Object.keys(grouped).sort().forEach(level => {
           const block = document.createElement("div");
           block.className = "level-block";
@@ -65,13 +58,11 @@
           list.appendChild(block);
         });
       });
-
     function markCollected(coord) {
       if (!confirm(`X:${coord.X}, Y:${coord.Y} を「取得済み」にしますか？`)) return;
-
       fetch(API_URL, {
         method: "POST",
-        headers: {"Content-Type": "application/json"},
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           サーバー名: coord.サーバー名,
           X: coord.X,
