@@ -1,36 +1,41 @@
-<!-- index.html – 座標マップ（未取得のみ表示） -->
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <title>座標マップ（未取得のみ表示）</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <meta charset="UTF-8">
+  <title>座標マップ（未取得のみ）</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <style>
-    body{font-family:sans-serif;text-align:center}
-    #map{height:1000px;width:1000px;margin:20px auto;background:#f2f2f2}
-    label,input,select,button{margin:5px;font-size:14px}
-    a{margin:0 10px;font-weight:bold;color:purple;text-decoration:none}
+    body { font-family: sans-serif; text-align: center; }
+    #map { height: 1000px; width: 1000px; margin: 20px auto; background-color: #f5f5f5; }
+    label, input, select, button { margin: 5px; font-size: 14px; }
+    a { margin: 0 10px; font-weight: bold; color: #663399; text-decoration: none; }
   </style>
 </head>
 <body>
 
-<!-- 1回だけパスワード確認 -->
+<!-- ✅ パスワード入力（セッション保持） -->
 <script>
-document.addEventListener('DOMContentLoaded',()=>{
-  if(prompt('パスワードを入力してください：')!=='wareranochonnma'){
-    alert('パスワードが違います。');location.href='https://www.google.com';
+document.addEventListener("DOMContentLoaded", () => {
+  if (!sessionStorage.getItem("auth")) {
+    const pwd = prompt("パスワードを入力してください：");
+    if (pwd !== "wareranochonnma") {
+      alert("パスワードが違います。");
+      window.location.href = "https://www.google.com";
+    } else {
+      sessionStorage.setItem("auth", "ok");
+    }
   }
 });
 </script>
 
-<h2>📍 座標マップ（未取得のみ表示）</h2>
+<h2>📍 座標マップ（未取得のみ表示）</h2>
 
 <form id="coordForm">
-  <label>サーバー名: <input id="server"   required /></label>
-  <label>X:         <input id="x"  type="number" required /></label>
-  <label>Y:         <input id="y"  type="number" required /></label>
+  <label>サーバー名: <input type="text" id="server" required></label>
+  <label>X: <input type="number" id="x" required></label>
+  <label>Y: <input type="number" id="y" required></label>
   <label>レベル:
     <select id="level">
       <option>1</option><option>2</option><option>3</option>
@@ -39,60 +44,70 @@ document.addEventListener('DOMContentLoaded',()=>{
   </label>
   <label>状態:
     <select id="status">
-      <option>未取得</option><option>取得済み</option>
+      <option>未取得</option>
+      <option>取得済み</option>
     </select>
   </label>
   <button type="submit">登録</button>
 </form>
 
 <div>
-  <a href="list_uncollected.html" target="_blank">📋 未取得一覧</a>
-  <a href="list_collected.html"   target="_blank">📋 取得済み一覧</a>
+  <a href="list_uncollected.html" target="_blank">📋 未取得一覧</a>
+  <a href="list_collected.html" target="_blank">📋 取得済み一覧</a>
 </div>
 
 <div id="map"></div>
 
 <script>
-/* ---------- 設定（URLだけ貼り替える） ---------- */
-const API_URL = "https://script.google.com/macros/s/AKfycbz35Io14v7NUVVJHSr84JByWz9SpTl5fUeaxsiz5YDMasPimDsNWsxnUqWFRDeOQ9k/exec";
-/* -------------------------------------------------- */
+const API_URL = "https://script.google.com/macros/s/AKfycbx3COM3uzJ5WlX1KHpWbZpfqVz4CzxOP4XnP3rUOx-Kc7Aec7CSkAx-dLL2juN0QHo/exec";
 
-const map = L.map('map',{crs:L.CRS.Simple,minZoom:-4,maxZoom:2,zoomSnap:0.1});
-const bounds=[[0,0],[1000,1000]];map.fitBounds(bounds).setZoom(0);
+const map = L.map('map', {
+  crs: L.CRS.Simple,
+  minZoom: -4,
+  maxZoom: 2,
+  zoomSnap: 0.1
+});
+const bounds = [[0, 0], [1000, 1000]];
+map.fitBounds(bounds);
+map.setZoom(0);
 
-/* 1000×1000 グリッド */
-for(let i=0;i<=1000;i++){
-  L.polyline([[i,0],[i,1000]],{color:'#ccc',weight:0.5}).addTo(map);
-  L.polyline([[0,i],[1000,i]],{color:'#ccc',weight:0.5}).addTo(map);
+// グリッド線描画
+for (let i = 0; i <= 1000; i += 50) {
+  L.polyline([[i, 0], [i, 1000]], {color: "#ccc", weight: 0.5}).addTo(map);
+  L.polyline([[0, i], [1000, i]], {color: "#ccc", weight: 0.5}).addTo(map);
 }
 
-/* マーカーを載せるレイヤー */
-const markerLayer=L.layerGroup().addTo(map);
-
-/* 未取得データを取り直して描画する関数 */
-function renderMarkers(){
-  markerLayer.clearLayers();
+// マーカー表示
+function loadMarkers() {
   fetch(API_URL)
-    .then(r=>r.json())
-    .then(data=>{
-      data.forEach(d=>{
-        if(d.取得状況==="未取得"){
-          const m=L.circleMarker([+d.Y,+d.X],
-            {radius:3,color:'black',fillOpacity:1}).addTo(markerLayer)
-            .bindPopup(`${d.サーバー名} / X:${d.X}, Y:${d.Y} / Lv:${d.レベル}`);
-
-          /* クリックで取得済みに変更 */
-          m.on('click',()=>{
-            if(confirm("この座標を取得済みにしますか？")){
-              fetch(API_URL,{
-                method:'POST',
-                headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({...d,取得状況:"取得済み"})
-              })
-              .then(r=>r.json()).then(res=>{
-                alert(res.message);
-                renderMarkers();      // ← ページリロードしない
-              });
+    .then(res => res.json())
+    .then(data => {
+      data.forEach(d => {
+        if (d.取得状況 === "未取得") {
+          const marker = L.circleMarker([parseInt(d.Y), parseInt(d.X)], {
+            radius: 4, color: "black", fillOpacity: 1
+          }).addTo(map);
+          marker.bindPopup(`${d.サーバー名} / X:${d.X}, Y:${d.Y} / Lv:${d.レベル}`);
+          marker.on("click", () => {
+            if (confirm("この座標を取得済みに変更しますか？")) {
+              fetch(API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  サーバー名: d.サーバー名,
+                  X: d.X,
+                  Y: d.Y,
+                  レベル: d.レベル,
+                  取得状況: "取得済み"
+                })
+              }).then(res => res.json())
+                .then(result => {
+                  alert(result.message);
+                  map.eachLayer(layer => {
+                    if (layer instanceof L.CircleMarker) map.removeLayer(layer);
+                  });
+                  loadMarkers(); // 再描画（リロード不要）
+                });
             }
           });
         }
@@ -100,31 +115,36 @@ function renderMarkers(){
     });
 }
 
-/* 初回描画 */
-renderMarkers();
+loadMarkers();
 
-/* フォーム送信（新規登録） */
-document.getElementById('coordForm').addEventListener('submit',e=>{
+// 登録フォーム送信処理
+document.getElementById("coordForm").addEventListener("submit", function(e) {
   e.preventDefault();
-  const body={
-    サーバー名:document.getElementById('server').value,
-    X:+document.getElementById('x').value,
-    Y:+document.getElementById('y').value,
-    レベル:document.getElementById('level').value,
-    取得状況:document.getElementById('status').value
+  const data = {
+    サーバー名: document.getElementById("server").value,
+    X: parseInt(document.getElementById("x").value),
+    Y: parseInt(document.getElementById("y").value),
+    レベル: document.getElementById("level").value,
+    取得状況: document.getElementById("status").value
   };
-  fetch(API_URL,{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify(body)
+  fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
   })
-  .then(r=>r.json())
-  .then(res=>{
-    alert(res.message);
-    renderMarkers();                // ← ここも再描画
+  .then(res => res.json())
+  .then(result => {
+    alert(result.message);
+    map.eachLayer(layer => {
+      if (layer instanceof L.CircleMarker) map.removeLayer(layer);
+    });
+    loadMarkers(); // 再描画
   })
-  .catch(err=>alert("登録に失敗しました: "+err));
+  .catch(error => {
+    alert("登録に失敗しました: " + error);
+  });
 });
 </script>
+
 </body>
 </html>
