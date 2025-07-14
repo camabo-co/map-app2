@@ -1,19 +1,38 @@
-<!DOCTYPE html><html lang="ja"><head>
-<meta charset="UTF-8"><title>未取得一覧</title>
-<style>body{font-family:sans-serif;padding:20px}h2{color:purple}.level{margin-bottom:20px}</style>
-</head><body>
-<h2>📋 未取得一覧（レベル別）</h2><div id="list"></div>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>未取得一覧</title>
+  <style>
+    body{font-family:sans-serif;padding:20px}
+    h2{color:purple}
+    .level-block{margin-bottom:20px}
+  </style>
+</head>
+<body>
+<h2>📋 未取得一覧（レベル別）</h2>
+<div id="list"></div>
 
 <script>
-const API_URL='https://script.google.com/macros/s/AKfycbyCSe_xkNHD0IHTdr46sWNti8ZHlcH8XoSci-464OD3QF6GilWJ7027Ceq4hZApWtg/exec';
+const API_URL="https://script.google.com/macros/s/AKfycbz6gxbR9aZcDXstfH5IFA7SJxXpYi4Z28JniAVnpQyRLh_qpkAK2enu0eLDoI9Ee5c/exec";
+
 fetch(API_URL).then(r=>r.json()).then(data=>{
-  const g={}; data.forEach(d=>{if(d.取得状況==='未取得'){(g[d.レベル]??=[]).push(d)}});
-  const c=document.getElementById('list');
-  Object.keys(g).sort().forEach(l=>{
-    c.insertAdjacentHTML('beforeend',
-      `<div class="level"><h3>レベル ${l}</h3><ul>${
-        g[l].map(d=>`<li>${d.サーバー名} / X:${d.X}, Y:${d.Y}</li>`).join('')
-      }</ul></div>`);
+  const grouped={};
+  data.forEach(d=>{
+    if(d.取得状況==="未取得"){
+      (grouped[d.レベル]=grouped[d.レベル]||[]).push(d);
+    }
+  });
+  const list=document.getElementById('list');
+  Object.keys(grouped).sort().forEach(lvl=>{
+    const div=document.createElement('div');
+    div.className='level-block';
+    div.innerHTML=`<h3>レベル ${lvl}</h3><ul>`+
+      grouped[lvl].map(d=>`<li>${d.サーバー名} / X:${d.X}, Y:${d.Y}</li>`).join('')
+      +'</ul>';
+    list.appendChild(div);
   });
 });
-</script></body></html>
+</script>
+</body>
+</html>
