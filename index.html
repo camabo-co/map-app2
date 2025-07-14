@@ -2,80 +2,94 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>取得済み一覧</title>
+  <title>座標マップ（未取得のみ表示）</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <style>
-    body {
-      font-family: sans-serif;
-      padding: 20px;
-      background-color: #f9f9f9;
-    }
-    h2 {
-      color: green;
-      margin-bottom: 20px;
-    }
-    h3 {
-      color: #333;
-      margin-bottom: 10px;
-    }
-    .level-block {
-      margin-bottom: 30px;
-      padding: 10px;
-      background-color: #e8f5e9;
-      border-left: 6px solid green;
-      border-radius: 5px;
-    }
-    ul {
-      list-style: none;
-      padding-left: 0;
-    }
-    li {
-      margin: 5px 0;
-      padding: 5px;
-      background-color: #fff;
-      border: 1px solid #ddd;
-      border-radius: 3px;
-    }
+    body { font-family:sans-serif;text-align:center }
+    #map { height:1000px;width:1000px;margin:20px auto;background:#f2f2f2 }
+    label,input,select,button { margin:5px;font-size:14px }
+    a { margin:0 10px;font-weight:bold;color:purple;text-decoration:none }
   </style>
 </head>
 <body>
-  <h2>📋 取得済み一覧（レベル別）</h2>
-  <div id="list">読み込み中...</div>
 
-  <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbwsteOmTEqdgq7-AE1zjgNjPWmc0_hMQXKq1tjE-WkvAlqSUE51kq3pGJkp_-0YkOw/exec";
+<!-- 🔒 簡易パスワード -->
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  if (prompt("パスワードを入力してください：") !== "wareranochonnma") {
+    alert("パスワードが違います。"); location.href="https://www.google.com";
+  }
+});
+</script>
 
-    fetch(API_URL)
-      .then(res => res.json())
-      .then(data => {
-        const grouped = {};
+<h2>📍 座標マップ（未取得のみ表示）</h2>
 
-        // 「取得済み」の座標だけをレベルごとに分類
-        data.forEach(d => {
-          if (d.取得状況 === "取得済み") {
-            const level = d.レベル;
-            if (!grouped[level]) grouped[level] = [];
-            grouped[level].push(d);
-          }
-        });
+<form id="coordForm">
+  <label>サーバー名: <input type="text" id="server" required></label>
+  <label>X: <input type="number" id="x" required></label>
+  <label>Y: <input type="number" id="y" required></label>
+  <label>レベル:
+    <select id="level">
+      <option>1</option><option>2</option><option>3</option>
+      <option>4</option><option>5</option><option>6</option><option>7</option>
+    </select>
+  </label>
+  <label>状態:
+    <select id="status">
+      <option>未取得</option><option>取得済み</option>
+    </select>
+  </label>
+  <button type="submit">登録</button>
+</form>
 
-        const container = document.getElementById("list");
-        container.innerHTML = ""; // 読み込み中を消す
+<div>
+  <a href="list_uncollected.html" target="_blank">📋 未取得一覧</a>
+  <a href="list_collected.html"   target="_blank">📋 取得済み一覧</a>
+</div>
 
-        // レベル順に並べて表示
-        Object.keys(grouped).sort().forEach(level => {
-          const div = document.createElement("div");
-          div.className = "level-block";
-          div.innerHTML = `<h3>レベル ${level}</h3><ul>` +
-            grouped[level].map(d =>
-              `<li>${d.サーバー名} / X:${d.X}, Y:${d.Y}</li>`
-            ).join("") +
-            `</ul>`;
-          container.appendChild(div);
-        });
-      })
-      .catch(err => {
-        document.getElementById("list").innerText = "データの読み込みに失敗しました: " + err;
-      });
-  </script>
+<div id="map"></div>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbxoso6hLFO5CHyJyBT3fVY4QTnrlDsUOXSoFsEjYvsLXtf7chiKdnZ4mrQjvKGbRz0/exec";
+
+/* --- 地図初期化 & 1000×1000 グリッド描画 --- */
+const map = L.map('map',{ crs:L.CRS.Simple,minZoom:-4,maxZoom:2,zoomSnap:0.1 });
+const bounds=[[0,0],[1000,1000]];
+map.fitBounds(bounds); map.setZoom(0);
+for(let i=0;i<=1000;i++){
+  L.polyline([[i,0],[i,1000]],{color:"#ccc",weight:0.5}).addTo(map);   // 縦線
+  L.polyline([[0,i],[1000,i]],{color:"#ccc",weight:0.5}).addTo(map);  // 横線
+}
+
+/* --- 未取得マーカー描画 --- */
+fetch(API_URL).then(r=>r.json()).then(rows=>{
+  rows.filter(r=>r.取得状況==="未取得").forEach(r=>{
+    const m=L.circleMarker([+r.Y,+r.X],{radius:3,color:"black",fillOpacity:1}).addTo(map);
+    m.bindPopup(`${r.サーバー名} / X:${r.X}, Y:${r.Y} / Lv:${r.レベル}`);
+    m.on("click",()=>{
+      if(confirm("この座標を取得済みにしますか？")){
+        fetch(API_URL,{method:"POST",headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({...r,取得状況:"取得済み"})})
+          .then(r=>r.json()).then(j=>{alert(j.message);location.reload()});
+      }
+    });
+  });
+});
+
+/* --- 新規登録 --- */
+document.getElementById("coordForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  const data={
+    サーバー名:server.value.trim(),
+    X:+x.value,Y:+y.value,レベル:level.value,
+    取得状況:status.value
+  };
+  fetch(API_URL,{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
+    .then(r=>r.json()).then(j=>{alert(j.message);location.reload()})
+    .catch(err=>alert("登録に失敗しました: "+err));
+});
+</script>
 </body>
 </html>
