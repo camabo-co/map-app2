@@ -1,19 +1,19 @@
 <!DOCTYPE html><html lang="ja"><head>
 <meta charset="UTF-8"><title>未取得一覧</title>
-<style>body{font-family:sans-serif;padding:20px}h2{color:purple}.level{margin:15px 0}</style>
+<style>body{font-family:sans-serif;padding:20px}h2{color:purple}.level{margin-bottom:20px}</style>
 </head><body>
 <h2>📋 未取得一覧（レベル別）</h2><div id="list"></div>
+
 <script>
-const API_URL="https://script.google.com/macros/s/AKfycbxoso6hLFO5CHyJyBT3fVY4QTnrlDsUOXSoFsEjYvsLXtf7chiKdnZ4mrQjvKGbRz0/exec";
-fetch(API_URL).then(r=>r.json()).then(rows=>{
-  const g={}; rows.filter(r=>r.取得状況==="未取得").forEach(r=>{
-    (g[r.レベル]=g[r.レベル]||[]).push(r); });
-  const wrap=document.getElementById("list");
-  Object.keys(g).sort((a,b)=>a-b).forEach(l=>{
-    const div=document.createElement("div");div.className="level";
-    div.innerHTML=`<h3>Lv.${l}</h3><ul>`+
-      g[l].map(r=>`<li>${r.サーバー名} / X:${r.X}, Y:${r.Y}</li>`).join("")+
-      `</ul>`; wrap.appendChild(div);});
+const API_URL='https://script.google.com/macros/s/AKfycbyCSe_xkNHD0IHTdr46sWNti8ZHlcH8XoSci-464OD3QF6GilWJ7027Ceq4hZApWtg/exec';
+fetch(API_URL).then(r=>r.json()).then(data=>{
+  const g={}; data.forEach(d=>{if(d.取得状況==='未取得'){(g[d.レベル]??=[]).push(d)}});
+  const c=document.getElementById('list');
+  Object.keys(g).sort().forEach(l=>{
+    c.insertAdjacentHTML('beforeend',
+      `<div class="level"><h3>レベル ${l}</h3><ul>${
+        g[l].map(d=>`<li>${d.サーバー名} / X:${d.X}, Y:${d.Y}</li>`).join('')
+      }</ul></div>`);
+  });
 });
-</script>
-</body></html>
+</script></body></html>
