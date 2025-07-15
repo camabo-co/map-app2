@@ -2,18 +2,43 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>座標マップ（未取得のみ）</title>
+  <title>座標マップ（未取得のみ表示）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <style>
     body { font-family: sans-serif; text-align: center; }
-    #map { height: 1000px; width: 1000px; margin: 20px auto; background-color: #f5f5f5; }
-    label, input, select, button { margin: 5px; font-size: 14px; }
-    a { margin: 0 10px; font-weight: bold; color: #663399; text-decoration: none; }
+    #map {
+      height: 1000px;
+      width: 1000px;
+      margin: 20px auto;
+      background-color: #f2f2f2;
+    }
+    label, input, select, button {
+      margin: 5px;
+      font-size: 14px;
+    }
+    a {
+      margin: 0 10px;
+      font-weight: bold;
+      color: purple;
+      text-decoration: none;
+    }
   </style>
 </head>
 <body>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const password = prompt("パスワードを入力してください：");
+  const correctPassword = "moehaotakai";
+  if (password !== correctPassword) {
+    alert("パスワードが違います。");
+    window.location.href = "https://www.google.com";
+  }
+});
+</script>
+
 <h2>📍 座標マップ（未取得のみ表示）</h2>
 
 <form id="coordForm">
@@ -43,8 +68,9 @@
 <div id="map"></div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbzbFuDdRu7v1zFW-OmQ1QNa1Ug3y3JtKndLptFKwxoucWoP7rRFdJUVM1_Lv2IEeuA/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzvCI6ySSqYmA8l9x0pkt1nOWmEap9Fp6dhoiYm4yz01QRQ4DnxUk6qf4D7tz2-Lsw/exec";
 
+// 地図初期化
 const map = L.map('map', {
   crs: L.CRS.Simple,
   minZoom: -4,
@@ -53,52 +79,44 @@ const map = L.map('map', {
 });
 const bounds = [[0, 0], [1000, 1000]];
 map.fitBounds(bounds);
-map.setZoom(-2);
+map.setZoom(0);
 
-// グリッド線描画
-for (let i = 0; i <= 1000; i += 50) {
+// 1000×1000 グリッド線を描画
+for (let i = 0; i <= 1000; i++) {
   L.polyline([[i, 0], [i, 1000]], {color: "#ccc", weight: 0.5}).addTo(map);
   L.polyline([[0, i], [1000, i]], {color: "#ccc", weight: 0.5}).addTo(map);
 }
 
-function loadMarkers() {
-  fetch(API_URL)
-    .then(res => res.json())
-    .then(data => {
-      data.forEach(d => {
-        if (d.取得状況 === "未取得") {
-          const marker = L.circleMarker([parseInt(d.Y), parseInt(d.X)], {
-            radius: 4, color: "black", fillOpacity: 1
-          }).addTo(map);
-          marker.bindPopup(`${d.サーバー名} / X:${d.X}, Y:${d.Y} / Lv:${d.レベル}`);
-          marker.on("click", () => {
-            if (confirm("この座標を取得済みに変更しますか？")) {
-              fetch(API_URL, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  サーバー名: d.サーバー名,
-                  X: d.X,
-                  Y: d.Y,
-                  レベル: d.レベル,
-                  取得状況: "取得済み"
-                })
-              }).then(res => res.json())
-                .then(result => {
-                  alert(result.message);
-                  map.eachLayer(layer => {
-                    if (layer instanceof L.CircleMarker) map.removeLayer(layer);
-                  });
-                  loadMarkers();
-                });
-            }
-          });
-        }
-      });
+// 未取得マーカーを表示
+fetch(API_URL)
+  .then(res => res.json())
+  .then(data => {
+    data.forEach(d => {
+      if (d.取得状況 === "未取得") {
+        const marker = L.circleMarker([parseInt(d.Y), parseInt(d.X)], {
+          radius: 3, color: "black", fillOpacity: 1
+        }).addTo(map);
+        marker.bindPopup(`${d.サーバー名} / X:${d.X}, Y:${d.Y} / Lv:${d.レベル}`);
+        marker.on("click", () => {
+          if (confirm("この座標を取得済みにしますか？")) {
+            fetch(API_URL, {
+              method: "POST",
+              body: JSON.stringify({
+                サーバー名: d.サーバー名,
+                X: d.X,
+                Y: d.Y,
+                レベル: d.レベル,
+                取得状況: "取得済み"
+              }),
+              headers: { "Content-Type": "application/json" }
+            }).then(() => location.reload());
+          }
+        });
+      }
     });
-}
-loadMarkers();
+  });
 
+// 登録処理
 document.getElementById("coordForm").addEventListener("submit", function(e) {
   e.preventDefault();
   const data = {
@@ -110,21 +128,14 @@ document.getElementById("coordForm").addEventListener("submit", function(e) {
   };
   fetch(API_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data)
-  })
-  .then(res => res.json())
-  .then(result => {
-    alert(result.message);
-    map.eachLayer(layer => {
-      if (layer instanceof L.CircleMarker) map.removeLayer(layer);
-    });
-    loadMarkers();
-  })
-  .catch(err => {
-    alert("登録失敗: " + err.message);
+    body: JSON.stringify(data),
+    headers: { "Content-Type": "application/json" }
+  }).then(res => res.text()).then(res => {
+    alert(res);
+    location.reload();
   });
 });
 </script>
+
 </body>
 </html>
